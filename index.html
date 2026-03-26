@@ -2833,10 +2833,17 @@ function drawLineChart(svgId, values, color, yLabel) {
   const span = Math.max(1e-9, maxY - minY);
 
   let path = '';
+  let points = '';
+  let labels = '';
   values.forEach((v, i) => {
     const x = padL + (i * innerW) / Math.max(1, values.length - 1);
     const y = h - padB - ((v - minY) * innerH) / span;
     path += `${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)} `;
+
+    // Show coordinate annotation for each sample point.
+    points += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="2.6" fill="${color}"/>`;
+    const ly = Math.max(padT + 10, y - 7);
+    labels += `<text x="${x.toFixed(2)}" y="${ly.toFixed(2)}" fill="#cbd5e1" font-size="9" text-anchor="middle">(${i}, ${v.toFixed(2)})</text>`;
   });
 
   const yTicks = 5;
@@ -2870,6 +2877,8 @@ function drawLineChart(svgId, values, color, yLabel) {
     <text x="${padL + 4}" y="${padT + 12}" fill="#94a3b8" font-size="11">${yLabel}</text>
     <text x="${(padL + innerW / 2).toFixed(2)}" y="${h - 8}" fill="#94a3b8" font-size="11" text-anchor="middle">Sample index n</text>
     <path d="${path}" fill="none" stroke="${color}" stroke-width="2"/>
+    ${points}
+    ${labels}
   `;
 }
 
@@ -2888,11 +2897,16 @@ function drawBarChart(svgId, values) {
   const barW = innerW / values.length;
 
   let bars = '';
+  let labels = '';
   values.forEach((v, i) => {
     const bh = (innerH * v) / maxV;
     const x = padL + i * barW + 1;
     const y = h - padB - bh;
-    bars += `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${Math.max(1, barW - 2).toFixed(2)}" height="${bh.toFixed(2)}" fill="#2dd4bf" opacity="0.85"/>`;
+    const bw = Math.max(1, barW - 2);
+    const cx = x + bw / 2;
+    bars += `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${bw.toFixed(2)}" height="${bh.toFixed(2)}" fill="#2dd4bf" opacity="0.85"/>`;
+    const ly = Math.max(padT + 10, y - 5);
+    labels += `<text x="${cx.toFixed(2)}" y="${ly.toFixed(2)}" fill="#cbd5e1" font-size="9" text-anchor="middle">(${i}, ${v.toFixed(2)})</text>`;
   });
 
   const yTicks = 5;
@@ -2926,6 +2940,7 @@ function drawBarChart(svgId, values) {
     <text x="${padL + 4}" y="${padT + 12}" fill="#94a3b8" font-size="11">|X[k]|</text>
     <text x="${(padL + innerW / 2).toFixed(2)}" y="${h - 8}" fill="#94a3b8" font-size="11" text-anchor="middle">Frequency bin k</text>
     ${bars}
+    ${labels}
   `;
 }
 
