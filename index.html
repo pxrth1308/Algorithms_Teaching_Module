@@ -401,6 +401,17 @@ table.dist-matrix td.cell-self { color: var(--text-muted); }
 table.dist-matrix td.cell-inf { color: var(--text-muted); }
 table.dist-matrix td.flash { animation: flash-update 0.5s ease-out; }
 
+/* Reuse Floyd-Warshall highlight classes for predecessor matrix visualization. */
+table.pred-matrix td.cell-k { background: var(--cell-k-bg); border-color: var(--cell-k-border); }
+table.pred-matrix td.cell-active { background: var(--cell-active-bg); border-color: var(--cell-active-border); color: var(--amber); font-weight: 700; }
+table.pred-matrix td.cell-via { background: var(--cell-via-bg); border-color: var(--cell-via-border); color: var(--green); }
+table.pred-matrix td.cell-updated { background: var(--cell-updated-bg); border-color: var(--cell-updated-border); color: var(--green); font-weight: 700; }
+table.pred-matrix td.cell-negcycle { background: var(--cell-negcycle-bg); border-color: var(--cell-negcycle-border); color: var(--red); }
+table.pred-matrix td.cell-path { background: var(--cell-path-bg); border-color: var(--cell-path-border); color: var(--purple); }
+table.pred-matrix td.cell-self { color: var(--text-muted); }
+table.pred-matrix td.cell-inf { color: var(--text-muted); }
+table.pred-matrix td.flash { animation: flash-update 0.5s ease-out; }
+
 @keyframes flash-update {
   0% { background: rgba(74,222,128,0.5); }
   100% { background: var(--cell-updated-bg); }
@@ -2811,24 +2822,53 @@ function drawLineChart(svgId, values, color, yLabel) {
 
   const w = 800;
   const h = 240;
-  const padX = 40;
-  const padY = 22;
+  const padL = 56;
+  const padR = 20;
+  const padT = 16;
+  const padB = 34;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
   const minY = Math.min(...values);
   const maxY = Math.max(...values);
   const span = Math.max(1e-9, maxY - minY);
 
   let path = '';
   values.forEach((v, i) => {
-    const x = padX + (i * (w - 2 * padX)) / Math.max(1, values.length - 1);
-    const y = h - padY - ((v - minY) * (h - 2 * padY)) / span;
+    const x = padL + (i * innerW) / Math.max(1, values.length - 1);
+    const y = h - padB - ((v - minY) * innerH) / span;
     path += `${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)} `;
   });
 
+  const yTicks = 5;
+  let yGrid = '';
+  let yTickLabels = '';
+  for (let t = 0; t < yTicks; t++) {
+    const ratio = t / (yTicks - 1);
+    const y = padT + ratio * innerH;
+    const yVal = maxY - ratio * span;
+    yGrid += `<line x1="${padL}" y1="${y.toFixed(2)}" x2="${w - padR}" y2="${y.toFixed(2)}" stroke="#334155" stroke-width="1" opacity="0.45" stroke-dasharray="3 3"/>`;
+    yTickLabels += `<text x="${padL - 8}" y="${(y + 3).toFixed(2)}" fill="#94a3b8" font-size="10" text-anchor="end">${yVal.toFixed(2)}</text>`;
+  }
+
+  const maxXTicks = 9;
+  const xTickCount = Math.min(maxXTicks, values.length);
+  let xTicks = '';
+  for (let t = 0; t < xTickCount; t++) {
+    const idx = Math.round((t * (values.length - 1)) / Math.max(1, xTickCount - 1));
+    const x = padL + (idx * innerW) / Math.max(1, values.length - 1);
+    xTicks += `<line x1="${x.toFixed(2)}" y1="${h - padB}" x2="${x.toFixed(2)}" y2="${h - padB + 4}" stroke="#64748b" stroke-width="1"/>`;
+    xTicks += `<text x="${x.toFixed(2)}" y="${h - padB + 16}" fill="#94a3b8" font-size="10" text-anchor="middle">${idx}</text>`;
+  }
+
   svg.innerHTML = `
     <rect x="0" y="0" width="${w}" height="${h}" fill="transparent"/>
-    <line x1="${padX}" y1="${h - padY}" x2="${w - padX}" y2="${h - padY}" stroke="#475569" stroke-width="1"/>
-    <line x1="${padX}" y1="${padY}" x2="${padX}" y2="${h - padY}" stroke="#475569" stroke-width="1"/>
-    <text x="${padX + 4}" y="${padY + 12}" fill="#94a3b8" font-size="11">${yLabel}</text>
+    ${yGrid}
+    <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${h - padB}" stroke="#64748b" stroke-width="1.2"/>
+    ${yTickLabels}
+    ${xTicks}
+    <text x="${padL + 4}" y="${padT + 12}" fill="#94a3b8" font-size="11">${yLabel}</text>
+    <text x="${(padL + innerW / 2).toFixed(2)}" y="${h - 8}" fill="#94a3b8" font-size="11" text-anchor="middle">Sample index n</text>
     <path d="${path}" fill="none" stroke="${color}" stroke-width="2"/>
   `;
 }
@@ -2838,22 +2878,53 @@ function drawBarChart(svgId, values) {
   if (!svg || !values || values.length === 0) return;
   const w = 800;
   const h = 240;
-  const padX = 40;
-  const padY = 22;
+  const padL = 56;
+  const padR = 20;
+  const padT = 16;
+  const padB = 34;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
   const maxV = Math.max(...values, 1e-9);
-  const barW = (w - 2 * padX) / values.length;
+  const barW = innerW / values.length;
 
   let bars = '';
   values.forEach((v, i) => {
-    const bh = ((h - 2 * padY) * v) / maxV;
-    const x = padX + i * barW + 1;
-    const y = h - padY - bh;
+    const bh = (innerH * v) / maxV;
+    const x = padL + i * barW + 1;
+    const y = h - padB - bh;
     bars += `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${Math.max(1, barW - 2).toFixed(2)}" height="${bh.toFixed(2)}" fill="#2dd4bf" opacity="0.85"/>`;
   });
 
+  const yTicks = 5;
+  let yGrid = '';
+  let yTickLabels = '';
+  for (let t = 0; t < yTicks; t++) {
+    const ratio = t / (yTicks - 1);
+    const y = padT + ratio * innerH;
+    const yVal = maxV - ratio * maxV;
+    yGrid += `<line x1="${padL}" y1="${y.toFixed(2)}" x2="${w - padR}" y2="${y.toFixed(2)}" stroke="#334155" stroke-width="1" opacity="0.45" stroke-dasharray="3 3"/>`;
+    yTickLabels += `<text x="${padL - 8}" y="${(y + 3).toFixed(2)}" fill="#94a3b8" font-size="10" text-anchor="end">${yVal.toFixed(2)}</text>`;
+  }
+
+  const maxXTicks = 9;
+  const xTickCount = Math.min(maxXTicks, values.length);
+  let xTicks = '';
+  for (let t = 0; t < xTickCount; t++) {
+    const idx = Math.round((t * (values.length - 1)) / Math.max(1, xTickCount - 1));
+    const x = padL + (idx + 0.5) * barW;
+    xTicks += `<line x1="${x.toFixed(2)}" y1="${h - padB}" x2="${x.toFixed(2)}" y2="${h - padB + 4}" stroke="#64748b" stroke-width="1"/>`;
+    xTicks += `<text x="${x.toFixed(2)}" y="${h - padB + 16}" fill="#94a3b8" font-size="10" text-anchor="middle">${idx}</text>`;
+  }
+
   svg.innerHTML = `
-    <line x1="${padX}" y1="${h - padY}" x2="${w - padX}" y2="${h - padY}" stroke="#475569" stroke-width="1"/>
-    <line x1="${padX}" y1="${padY}" x2="${padX}" y2="${h - padY}" stroke="#475569" stroke-width="1"/>
+    <rect x="0" y="0" width="${w}" height="${h}" fill="transparent"/>
+    ${yGrid}
+    <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#64748b" stroke-width="1.2"/>
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${h - padB}" stroke="#64748b" stroke-width="1.2"/>
+    ${yTickLabels}
+    ${xTicks}
+    <text x="${padL + 4}" y="${padT + 12}" fill="#94a3b8" font-size="11">|X[k]|</text>
+    <text x="${(padL + innerW / 2).toFixed(2)}" y="${h - 8}" fill="#94a3b8" font-size="11" text-anchor="middle">Frequency bin k</text>
     ${bars}
   `;
 }
