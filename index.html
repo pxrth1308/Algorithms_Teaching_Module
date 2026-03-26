@@ -1,0 +1,3580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Floyd-Warshall All-Pairs Shortest Paths — BSD 404</title>
+<style>
+:root {
+  --bg: #0a0e1a;
+  --panel: #111827;
+  --panel2: #1a2236;
+  --panel3: #0f172a;
+  --border: #2d3748;
+  --border2: #374151;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-muted: #64748b;
+  --accent: #38bdf8;
+  --accent2: #0ea5e9;
+  --green: #4ade80;
+  --green2: #22c55e;
+  --amber: #fbbf24;
+  --amber2: #f59e0b;
+  --red: #f87171;
+  --red2: #ef4444;
+  --purple: #a78bfa;
+  --teal: #2dd4bf;
+
+  --cell-normal-bg: #1a2236;
+  --cell-normal-border: #2d3748;
+  --cell-k-bg: #0f2744;
+  --cell-k-border: #2563eb;
+  --cell-active-bg: #3d2200;
+  --cell-active-border: #f59e0b;
+  --cell-via-bg: #0a2a1a;
+  --cell-via-border: #22c55e;
+  --cell-updated-bg: #0a3a0a;
+  --cell-updated-border: #4ade80;
+  --cell-negcycle-bg: #3d0a0a;
+  --cell-negcycle-border: #f87171;
+  --cell-path-bg: #1a1a3d;
+  --cell-path-border: #a78bfa;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 13px;
+}
+
+/* Keep the same base background across all parts */
+#main-tool,
+#fft-main-tool,
+#modexp-main-tool,
+#visualization,
+#fft-visualization,
+#modexp-visualization,
+#lecture-notes,
+#fft-lecture-notes,
+#modexp-lecture-notes {
+  background: var(--bg);
+}
+
+a { color: var(--accent); }
+
+/* ── HEADER ── */
+header {
+  background: linear-gradient(135deg, #0f172a 0%, #1a2236 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+header h1 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.3px;
+}
+header .meta {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.3px;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: rgba(56,189,248,0.15);
+  color: var(--accent);
+  border: 1px solid rgba(56,189,248,0.3);
+  margin-left: 8px;
+}
+
+/* ── LECTURE NOTES ── */
+#lecture-notes {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.notes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  cursor: pointer;
+  user-select: none;
+  gap: 12px;
+}
+.notes-header:hover { background: rgba(255,255,255,0.02); }
+.notes-header h2 { font-size: 13px; font-weight: 600; color: var(--text-dim); letter-spacing: 0.3px; }
+.notes-toggle { font-size: 11px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 2px 8px; border-radius: 4px; }
+.notes-toggle:hover { background: rgba(56,189,248,0.1); }
+.notes-body { padding: 0 24px 20px; display: none; }
+.notes-body.open { display: block; }
+
+.roadmap { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.roadmap a {
+  padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 500;
+  background: rgba(56,189,248,0.1); color: var(--accent);
+  border: 1px solid rgba(56,189,248,0.2);
+  text-decoration: none; white-space: nowrap;
+}
+.roadmap a:hover { background: rgba(56,189,248,0.2); }
+
+.notes-section { margin: 20px 0; }
+.notes-section h3 { font-size: 14px; font-weight: 600; color: var(--accent); margin-bottom: 8px; border-left: 3px solid var(--accent); padding-left: 10px; }
+.notes-section h4 { font-size: 12px; font-weight: 600; color: var(--amber); margin: 12px 0 6px; }
+.notes-section p { color: var(--text-dim); line-height: 1.65; margin-bottom: 8px; }
+.notes-section code { background: var(--panel2); color: var(--teal); padding: 1px 5px; border-radius: 3px; font-family: 'Consolas', monospace; font-size: 11px; }
+
+.key-concept {
+  background: rgba(56,189,248,0.06);
+  border: 1px solid rgba(56,189,248,0.2);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 10px 0;
+}
+.key-concept .kc-title { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px; }
+.key-concept p { color: var(--text-dim); margin: 0; font-size: 12px; }
+
+.highlight-box {
+  background: rgba(251,191,36,0.07);
+  border: 1px solid rgba(251,191,36,0.25);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 10px 0;
+}
+.highlight-box p { color: var(--text-dim); margin: 0; font-size: 12px; }
+.highlight-box strong { color: var(--amber); }
+
+.worked-example {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  margin: 10px 0;
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: pre;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+.complexity-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+.complexity-table th, .complexity-table td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.complexity-table th { background: var(--panel2); color: var(--accent); font-weight: 600; }
+.complexity-table td { color: var(--text-dim); }
+.complexity-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* ── MAIN LAYOUT ── */
+#main-tool {
+  display: flex;
+  min-height: calc(100vh - 100px);
+  gap: 0;
+}
+
+/* ── LEFT CONTROLS ── */
+#controls {
+  width: 360px;
+  min-width: 320px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.ctrl-section {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.ctrl-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+/* Preset buttons */
+.preset-btns { display: flex; flex-direction: column; gap: 6px; }
+.preset-btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--panel3);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  transition: all 0.15s;
+  display: flex; align-items: center; gap: 8px;
+}
+.preset-btn:hover { background: rgba(56,189,248,0.08); border-color: rgba(56,189,248,0.3); color: var(--text); }
+.preset-btn.active { background: rgba(56,189,248,0.12); border-color: var(--accent); color: var(--accent); }
+.preset-btn .pb-icon { font-size: 14px; width: 18px; text-align: center; }
+
+/* Custom input */
+.custom-input-area { display: flex; flex-direction: column; gap: 8px; }
+.size-row { display: flex; align-items: center; gap: 8px; }
+.size-row label { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+.size-select {
+  flex: 1; padding: 5px 8px;
+  background: var(--panel3); border: 1px solid var(--border2);
+  color: var(--text); border-radius: 5px; font-size: 12px; cursor: pointer;
+}
+.matrix-input-grid { display: flex; flex-direction: column; gap: 3px; }
+.matrix-input-row { display: flex; gap: 3px; }
+.matrix-cell-input {
+  width: 42px; height: 32px;
+  background: var(--panel3); border: 1px solid var(--border);
+  color: var(--text); text-align: center;
+  border-radius: 4px; font-size: 11px; font-family: 'Consolas', monospace;
+  transition: border-color 0.15s;
+}
+.matrix-cell-input:focus { outline: none; border-color: var(--accent); background: rgba(56,189,248,0.05); }
+.matrix-cell-input.self { background: rgba(255,255,255,0.03); color: var(--text-muted); }
+.input-hint { font-size: 10px; color: var(--text-muted); }
+
+/* Speed slider */
+.speed-row { display: flex; align-items: center; gap: 8px; }
+.speed-label { font-size: 12px; color: var(--text-dim); flex: 1; }
+.speed-val { font-size: 12px; color: var(--amber); font-weight: 600; min-width: 32px; text-align: right; }
+input[type=range] {
+  flex: 2; appearance: none; -webkit-appearance: none; height: 4px;
+  background: var(--border2); border-radius: 2px; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--accent); cursor: pointer;
+  box-shadow: 0 0 0 2px rgba(56,189,248,0.3);
+}
+
+/* Playback buttons */
+.playback-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+.pb-btn {
+  padding: 7px 10px; border-radius: 6px;
+  background: var(--panel3); border: 1px solid var(--border2);
+  color: var(--text-dim); cursor: pointer; font-size: 11px; font-weight: 600;
+  transition: all 0.15s; white-space: nowrap;
+  display: flex; align-items: center; gap: 4px;
+}
+.pb-btn:hover:not(:disabled) { background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.3); color: var(--text); }
+.pb-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.pb-btn.primary { background: rgba(56,189,248,0.15); border-color: rgba(56,189,248,0.4); color: var(--accent); }
+.pb-btn.primary:hover:not(:disabled) { background: rgba(56,189,248,0.25); }
+.pb-btn.danger { background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.3); color: var(--red); }
+
+/* Status row */
+.status-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.step-counter { font-size: 11px; color: var(--text-dim); }
+.step-counter strong { color: var(--text); }
+.status-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 9999px; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+.status-idle { background: rgba(100,116,139,0.15); color: var(--text-muted); border: 1px solid rgba(100,116,139,0.3); }
+.status-ready { background: rgba(56,189,248,0.1); color: var(--accent); border: 1px solid rgba(56,189,248,0.3); }
+.status-playing { background: rgba(74,222,128,0.1); color: var(--green); border: 1px solid rgba(74,222,128,0.3); }
+.status-paused { background: rgba(251,191,36,0.1); color: var(--amber); border: 1px solid rgba(251,191,36,0.3); }
+.status-done { background: rgba(167,139,250,0.1); color: var(--purple); border: 1px solid rgba(167,139,250,0.3); }
+.status-error { background: rgba(248,113,113,0.1); color: var(--red); border: 1px solid rgba(248,113,113,0.3); }
+
+/* Counters */
+.counters-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.counter-box {
+  background: var(--panel3); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px; text-align: center;
+}
+.counter-val { font-size: 20px; font-weight: 700; color: var(--accent); font-family: 'Consolas', monospace; }
+.counter-label { font-size: 9px; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px; }
+
+/* Path query */
+.path-query { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.path-query label { font-size: 11px; color: var(--text-dim); }
+.path-select {
+  padding: 4px 8px; background: var(--panel3); border: 1px solid var(--border2);
+  color: var(--text); border-radius: 5px; font-size: 12px; cursor: pointer;
+}
+.show-path-btn {
+  padding: 5px 12px; border-radius: 5px; border: 1px solid rgba(167,139,250,0.3);
+  background: rgba(167,139,250,0.1); color: var(--purple); cursor: pointer;
+  font-size: 11px; font-weight: 600; transition: all 0.15s;
+}
+.show-path-btn:hover { background: rgba(167,139,250,0.2); }
+.path-result { font-size: 12px; padding: 6px 10px; background: var(--panel3); border-radius: 5px; border: 1px solid var(--border); color: var(--text-dim); min-height: 30px; }
+.path-result.has-path { color: var(--purple); border-color: rgba(167,139,250,0.3); }
+.path-result.no-path { color: var(--red); border-color: rgba(248,113,113,0.3); }
+
+/* ── RIGHT VISUALIZATION ── */
+#visualization {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+/* Legend */
+.legend-bar {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); }
+.legend-swatch { width: 16px; height: 16px; border-radius: 3px; border: 1.5px solid; flex-shrink: 0; }
+
+/* Graph + Matrix row */
+.viz-top-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.graph-panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px; flex: 1; min-width: 280px;
+}
+.panel-title {
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px;
+}
+#graph-svg {
+  width: 100%; display: block;
+  background: var(--panel3); border-radius: 6px;
+}
+
+.matrix-panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px; min-width: 280px;
+}
+.matrix-panel .panel-title { margin-bottom: 6px; }
+.matrix-label { font-size: 10px; color: var(--text-muted); margin-bottom: 8px; }
+
+.matrix-wrapper { overflow-x: auto; }
+table.dist-matrix {
+  border-collapse: collapse;
+  font-family: 'Consolas', monospace;
+  font-size: 13px;
+}
+table.dist-matrix th {
+  width: 46px; height: 28px; text-align: center;
+  color: var(--text-muted); font-weight: 600; font-size: 11px;
+  background: var(--panel3);
+}
+table.dist-matrix td {
+  width: 46px; height: 46px; text-align: center;
+  border: 1.5px solid var(--cell-normal-border);
+  background: var(--cell-normal-bg);
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s, color 0.15s;
+  font-size: 13px; font-weight: 500;
+  position: relative;
+}
+table.dist-matrix td:hover { filter: brightness(1.2); }
+table.dist-matrix td.cell-k { background: var(--cell-k-bg); border-color: var(--cell-k-border); }
+table.dist-matrix td.cell-active { background: var(--cell-active-bg); border-color: var(--cell-active-border); color: var(--amber); font-weight: 700; }
+table.dist-matrix td.cell-via { background: var(--cell-via-bg); border-color: var(--cell-via-border); color: var(--green); }
+table.dist-matrix td.cell-updated { background: var(--cell-updated-bg); border-color: var(--cell-updated-border); color: var(--green); font-weight: 700; }
+table.dist-matrix td.cell-negcycle { background: var(--cell-negcycle-bg); border-color: var(--cell-negcycle-border); color: var(--red); }
+table.dist-matrix td.cell-path { background: var(--cell-path-bg); border-color: var(--cell-path-border); color: var(--purple); }
+table.dist-matrix td.cell-self { color: var(--text-muted); }
+table.dist-matrix td.cell-inf { color: var(--text-muted); }
+table.dist-matrix td.flash { animation: flash-update 0.5s ease-out; }
+
+@keyframes flash-update {
+  0% { background: rgba(74,222,128,0.5); }
+  100% { background: var(--cell-updated-bg); }
+}
+
+/* Predecessor matrix */
+table.pred-matrix {
+  border-collapse: collapse;
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+}
+table.pred-matrix th {
+  width: 40px; height: 24px; text-align: center;
+  color: var(--text-muted); font-weight: 600; font-size: 10px;
+  background: var(--panel3);
+}
+table.pred-matrix td {
+  width: 40px; height: 36px; text-align: center;
+  border: 1px solid var(--border);
+  background: var(--panel3);
+  transition: background 0.2s, color 0.2s;
+  font-size: 11px; color: var(--text-dim);
+}
+table.pred-matrix td.pred-updated { background: rgba(74,222,128,0.1); color: var(--green); }
+table.pred-matrix td.pred-path { background: rgba(167,139,250,0.12); color: var(--purple); }
+
+/* Recurrence formula */
+.recurrence-panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px;
+}
+.recurrence-display {
+  font-family: 'Consolas', monospace;
+  font-size: 14px; line-height: 2;
+  color: var(--text);
+  background: var(--panel3); border-radius: 6px;
+  padding: 12px 16px; min-height: 48px;
+}
+.rec-k { color: var(--accent); font-weight: 700; }
+.rec-i { color: var(--amber); font-weight: 700; }
+.rec-j { color: var(--purple); font-weight: 700; }
+.rec-via { color: var(--green); font-weight: 700; }
+.rec-cur { color: var(--text-dim); }
+.rec-updated { color: var(--green); animation: blink-green 0.6s ease-out; }
+.rec-no-update { color: var(--text-muted); }
+@keyframes blink-green { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* Bottom row: pseudocode + explanation */
+.viz-bottom-row { display: flex; gap: 14px; flex-wrap: wrap; }
+.pseudo-panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px; flex: 1; min-width: 260px;
+}
+.pseudocode {
+  font-family: 'Consolas', monospace; font-size: 12px;
+  background: var(--panel3); border-radius: 6px;
+  padding: 10px 12px; list-style: none; line-height: 1.8;
+}
+.pseudocode li {
+  display: flex; gap: 10px; padding: 2px 6px; border-radius: 3px;
+  cursor: default; transition: background 0.15s;
+  position: relative;
+}
+.pseudocode li:hover { background: rgba(255,255,255,0.04); }
+.pseudocode li.active { background: rgba(56,189,248,0.12); }
+.pseudo-ln { color: var(--text-muted); user-select: none; min-width: 18px; text-align: right; }
+.pseudo-code { color: var(--text-dim); }
+.pseudo-code .kw { color: var(--accent); }
+.pseudo-code .fn { color: var(--amber); }
+.pseudo-code .comment { color: var(--text-muted); font-style: italic; }
+.pseudocode li.active .pseudo-code { color: var(--text); }
+
+/* Tooltip for pseudocode */
+.pseudo-tooltip {
+  display: none; position: absolute; left: 100%; top: 50%; transform: translateY(-50%);
+  background: var(--panel2); border: 1px solid var(--accent);
+  border-radius: 5px; padding: 6px 10px; font-size: 11px; color: var(--text-dim);
+  white-space: nowrap; z-index: 10; pointer-events: none; max-width: 280px; white-space: normal;
+  margin-left: 8px;
+}
+.pseudocode li:hover .pseudo-tooltip { display: block; }
+
+/* Keep FFT tooltips visible within narrower layout by showing them below the line. */
+#fft-pseudocode li .pseudo-tooltip {
+  left: 0;
+  top: calc(100% + 4px);
+  transform: none;
+  margin-left: 0;
+  min-width: 220px;
+  max-width: 360px;
+  z-index: 30;
+}
+#fft-pseudocode li:hover .pseudo-tooltip {
+  display: block;
+}
+
+.explanation-panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px; flex: 1; min-width: 240px;
+}
+#step-explanation {
+  background: var(--panel3); border: 1px solid var(--border);
+  border-radius: 6px; padding: 12px; font-size: 12px;
+  color: var(--text-dim); line-height: 1.6; min-height: 80px;
+}
+#step-explanation .exp-title { font-weight: 700; color: var(--text); margin-bottom: 6px; font-size: 13px; }
+#step-explanation .exp-formula { font-family: 'Consolas', monospace; color: var(--teal); margin: 4px 0; }
+#step-explanation .exp-result { font-weight: 600; }
+#step-explanation .exp-improved { color: var(--green); }
+#step-explanation .exp-no-change { color: var(--text-muted); }
+#step-explanation .exp-warning { color: var(--red); }
+
+/* History table */
+.history-panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px;
+}
+.history-scroll { max-height: 180px; overflow-y: auto; }
+table.history-table {
+  width: 100%; border-collapse: collapse; font-size: 11px;
+  font-family: 'Consolas', monospace;
+}
+table.history-table th {
+  background: var(--panel3); color: var(--text-muted);
+  font-weight: 600; font-size: 10px; letter-spacing: 0.5px;
+  text-transform: uppercase; padding: 5px 8px; text-align: left;
+  position: sticky; top: 0; z-index: 1;
+}
+table.history-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); color: var(--text-dim); cursor: pointer; }
+table.history-table tr:hover td { background: rgba(255,255,255,0.03); color: var(--text); }
+table.history-table tr.history-active td { background: rgba(56,189,248,0.08); color: var(--accent); }
+.hist-updated { color: var(--green); font-weight: 700; }
+.hist-check { color: var(--text-dim); }
+
+/* Negative cycle alert */
+#neg-cycle-alert {
+  display: none; background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.4);
+  border-radius: 8px; padding: 12px 14px; color: var(--red); font-size: 12px;
+}
+#neg-cycle-alert strong { font-size: 13px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Responsive */
+@media (max-width: 980px) {
+  #main-tool { flex-direction: column; }
+  #controls { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid var(--border); }
+  .viz-top-row { flex-direction: column; }
+  .viz-bottom-row { flex-direction: column; }
+  #fft-main-tool { flex-direction: column; }
+  #fft-controls { width: 100% !important; min-width: unset !important; border-right: none !important; border-bottom: 1px solid var(--border); }
+}
+
+/* Dijkstra comparison */
+.compare-box {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;
+}
+.compare-card {
+  background: var(--panel3); border-radius: 6px; padding: 10px;
+  border: 1px solid var(--border);
+}
+.compare-card .cc-title { font-size: 11px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+.compare-card .cc-complexity { font-family: 'Consolas', monospace; font-size: 13px; color: var(--amber); margin-bottom: 4px; }
+.compare-card p { font-size: 11px; color: var(--text-muted); }
+
+/* ── DIJKSTRA COMPARISON BAR ── */
+#dijkstra-compare { display: none; }
+
+/* ── ALGORITHM TABS ── */
+.algo-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 10px 24px;
+  background: var(--panel3);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.algo-tab {
+  padding: 7px 12px;
+  border-radius: 9999px;
+  border: 1px solid var(--border2);
+  background: var(--panel2);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.algo-tab:hover {
+  background: rgba(56,189,248,0.08);
+  color: var(--text);
+}
+.algo-tab.active {
+  background: rgba(56,189,248,0.15);
+  border-color: rgba(56,189,248,0.45);
+  color: var(--accent);
+}
+
+#fft-lecture-notes,
+#fft-tool {
+  display: none;
+}
+#modexp-lecture-notes,
+#modexp-tool {
+  display: none;
+}
+
+/* ── FFT PANELS ── */
+.fft-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+.fft-chart {
+  width: 100%;
+  height: 240px;
+  background: var(--panel3);
+  border-radius: 6px;
+  display: block;
+}
+.fft-signal-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.fft-signal-form .full {
+  grid-column: 1 / -1;
+}
+.fft-input {
+  width: 100%;
+  padding: 6px 8px;
+  background: var(--panel3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 5px;
+  font-size: 12px;
+}
+.fft-mini {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.fft-kv {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.fft-kv .counter-box {
+  text-align: left;
+}
+.fft-butterfly {
+  background: var(--panel3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.fft-checklist {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.fft-formula {
+  font-family: 'Consolas', monospace;
+  color: var(--teal);
+  font-size: 12px;
+  margin-top: 6px;
+  word-break: break-word;
+}
+
+.modexp-strip {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.modexp-bit {
+  width: 30px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--panel3);
+  color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Consolas', monospace;
+  font-weight: 700;
+}
+.modexp-bit.active {
+  border-color: var(--amber2);
+  color: var(--amber);
+  background: rgba(245,158,11,0.15);
+}
+.modexp-bit.done {
+  border-color: var(--green2);
+  color: var(--green);
+  background: rgba(34,197,94,0.12);
+}
+.modexp-flow {
+  font-family: 'Consolas', monospace;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.6;
+  background: var(--panel3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div>
+    <h1 id="algo-title">Floyd-Warshall All-Pairs Shortest Paths<span class="badge" id="algo-badge">CLO-1</span></h1>
+    <div class="meta" id="algo-subtitle">BSD 404 — Algorithms II &nbsp;|&nbsp; Dr. Arash Kermani &nbsp;|&nbsp; LP, Dynamic Programming &amp; Sorting Networks</div>
+  </div>
+  <div class="meta">Student: Aggarwal, Parth &nbsp;|&nbsp; ID: 20220001200</div>
+</header>
+
+<nav class="algo-tabs">
+  <button class="algo-tab active" id="tab-fw" onclick="switchMode('fw')">Part 1: Floyd-Warshall</button>
+  <button class="algo-tab" id="tab-fft" onclick="switchMode('fft')">Part 2: FFT / DFT</button>
+  <button class="algo-tab" id="tab-modexp" onclick="switchMode('modexp')">Part 3: Modular Exponentiation</button>
+</nav>
+
+<!-- LECTURE NOTES -->
+<section id="lecture-notes">
+  <div class="notes-header" onclick="toggleNotes()">
+    <h2>📚 Lecture Notes — Floyd-Warshall</h2>
+    <button class="notes-toggle" id="notes-toggle-btn">Collapse ▲</button>
+  </div>
+  <div class="notes-body open" id="notes-body">
+    <div class="roadmap">
+      <a href="#sec1">1. The Problem</a>
+      <a href="#sec2">2. Naive Approaches</a>
+      <a href="#sec3">3. Dynamic Programming Idea</a>
+      <a href="#sec4">4. The Recurrence</a>
+      <a href="#sec5">5. The Algorithm</a>
+      <a href="#sec6">6. Predecessors & Path Reconstruction</a>
+      <a href="#sec7">7. Negative Cycles</a>
+      <a href="#sec8">8. Complexity Comparison</a>
+      <a href="#sec9">9. Worked Example</a>
+    </div>
+
+    <div class="notes-section" id="sec1">
+      <h3>1 — The All-Pairs Shortest Paths Problem</h3>
+      <p>Given a <strong>weighted directed graph</strong> G = (V, E) with weight function w: E → ℝ, the <strong>all-pairs shortest paths (APSP)</strong> problem asks us to find the shortest path (minimum total weight) between <em>every</em> pair of vertices (i, j).</p>
+      <div class="key-concept">
+        <div class="kc-title">What we want</div>
+        <p>A V×V matrix D where D[i][j] = the weight of a shortest path from vertex i to vertex j, for all i and j. Plus a predecessor matrix Π that lets us reconstruct the actual path.</p>
+      </div>
+      <p>Real-world applications: routing protocols (OSPF, BGP), GPS navigation with multiple destinations, network reliability analysis, arbitrage detection in currency exchange.</p>
+      <div class="highlight-box">
+        <p><strong>Try it yourself:</strong> Click "CLRS Example" in the controls, then click Build Steps and Step through the algorithm. Watch how the distance matrix evolves as each vertex k is used as an intermediate.</p>
+      </div>
+    </div>
+
+    <div class="notes-section" id="sec2">
+      <h3>2 — Naive Approach: Run Dijkstra V Times</h3>
+      <p>One idea: for each vertex s, run Dijkstra's algorithm from s to find the shortest paths from s to all other vertices. This solves APSP in <code>O(V · (V+E) log V)</code> time.</p>
+      <p>Problem: Dijkstra requires <strong>non-negative edge weights</strong>. If the graph has negative weights (but no negative cycles), we can use Bellman-Ford instead: <code>O(V · VE) = O(V²E)</code>. For dense graphs where E = Θ(V²), this is <code>O(V⁴)</code> — very slow!</p>
+      <div class="key-concept">
+        <div class="kc-title">Floyd-Warshall's advantage</div>
+        <p>Floyd-Warshall handles negative weights, works on dense graphs in O(V³), and has a simple, elegant implementation. For dense graphs, it beats running Dijkstra V times.</p>
+      </div>
+    </div>
+
+    <div class="notes-section" id="sec3">
+      <h3>3 — The Dynamic Programming Idea</h3>
+      <p>Floyd-Warshall uses dynamic programming. The key insight is to think about the <strong>intermediate vertices</strong> on a shortest path.</p>
+      <p>Consider the shortest path from vertex i to vertex j. Either this path:</p>
+      <ul style="color:var(--text-dim); margin: 8px 0 8px 20px; line-height: 2;">
+        <li>Goes directly from i to j without passing through vertex k, or</li>
+        <li>Goes through vertex k: i → ... → k → ... → j (where the sub-paths i→k and k→j only use intermediate vertices from {1, ..., k-1})</li>
+      </ul>
+      <div class="highlight-box">
+        <p><strong>Optimal Substructure:</strong> If a shortest path from i to j passes through vertex k, then the i→k portion and the k→j portion must themselves be shortest paths (using only vertices {1,...,k-1} as intermediates). This is the classic optimal substructure property that makes DP applicable.</p>
+      </div>
+    </div>
+
+    <div class="notes-section" id="sec4">
+      <h3>4 — The Recurrence</h3>
+      <p>Let <code>d(k)[i][j]</code> = the weight of a shortest path from i to j using only vertices {1, 2, ..., k} as intermediate vertices.</p>
+      <p><strong>Base case</strong> (k=0): No intermediate vertices allowed. <code>d(0)[i][j] = w[i][j]</code> (direct edge weight, or ∞ if no edge).</p>
+      <div class="key-concept">
+        <div class="kc-title">The Floyd-Warshall Recurrence</div>
+        <p style="font-family:'Consolas',monospace; font-size:14px; color:var(--teal); margin:8px 0;">d(k)[i][j] = min( d(k-1)[i][j], &nbsp; d(k-1)[i][k] + d(k-1)[k][j] )</p>
+        <p>Either we don't use k as intermediate (first term), or we go through k (second term). We take the minimum.</p>
+      </div>
+      <p>The final answer is <code>d(V)[i][j]</code> — the shortest path using any vertex as intermediate. In practice, Floyd-Warshall updates the matrix in-place (it's provably equivalent).</p>
+    </div>
+
+    <div class="notes-section" id="sec5">
+      <h3>5 — The Algorithm</h3>
+      <div class="worked-example">FLOYD-WARSHALL(W, n):
+  // Initialize distance matrix
+  D ← copy of W                    -- d[i][j] = w[i][j] initially
+  π[i][j] ← i  if w[i][j] < ∞    -- predecessor: came from i
+  π[i][j] ← NIL otherwise
+
+  // Triple nested loop — the heart of the algorithm
+  for k = 1 to n:                  -- try each vertex as intermediate
+    for i = 1 to n:
+      for j = 1 to n:
+        if d[i][k] + d[k][j] < d[i][j]:  -- going via k is shorter?
+          d[i][j] ← d[i][k] + d[k][j]   -- update with shorter distance
+          π[i][j] ← π[k][j]             -- path now goes via k
+
+  return D, Π</div>
+      <p>The algorithm is deceptively simple: just three nested loops, one comparison, and one update. The magic is in the <strong>ordering</strong> — by iterating k from 1 to n, we build up from shorter paths to longer ones.</p>
+    </div>
+
+    <div class="notes-section" id="sec6">
+      <h3>6 — Predecessor Matrix & Path Reconstruction</h3>
+      <p>The predecessor matrix Π[i][j] stores the <strong>predecessor of j</strong> on the shortest known path from i to j. Initially, if edge (i,j) exists, then Π[i][j] = i (j's predecessor on the direct path is i).</p>
+      <p>During the algorithm, if we find that going via k improves d[i][j], we set <code>Π[i][j] = Π[k][j]</code>. This records that the predecessor of j on the i→j path is the same as the predecessor of j on the k→j path.</p>
+      <div class="key-concept">
+        <div class="kc-title">Reconstructing a Path</div>
+        <p>To find path from i to j: follow Π[i][j] backward until you reach i. More precisely: start at j, then look at Π[i][j] to get previous node, then Π[i][prev], and so on until you reach i.</p>
+      </div>
+      <p><strong>Try it:</strong> After running the algorithm, use the "Show Path" controls to visualize any shortest path in the graph.</p>
+    </div>
+
+    <div class="notes-section" id="sec7">
+      <h3>7 — Negative Cycles</h3>
+      <p>A <strong>negative cycle</strong> is a cycle whose total edge weight is negative. If a negative cycle exists on any path from i to j, then the shortest path from i to j is −∞ (we can loop around the cycle indefinitely).</p>
+      <div class="highlight-box">
+        <p><strong>Detection:</strong> After Floyd-Warshall completes, check the diagonal: if <strong>d[i][i] &lt; 0</strong> for any vertex i, then vertex i is on a negative cycle. The shortest-path problem has no solution (paths are −∞).</p>
+      </div>
+      <p>Try the "Negative Cycle" preset to see this in action — vertices on the cycle will show negative diagonal values highlighted in red.</p>
+    </div>
+
+    <div class="notes-section" id="sec8">
+      <h3>8 — Complexity Comparison</h3>
+      <table class="complexity-table">
+        <tr><th>Algorithm</th><th>Time Complexity</th><th>Space</th><th>Negative Weights?</th><th>Best For</th></tr>
+        <tr><td>Floyd-Warshall</td><td style="color:var(--green)">O(V³)</td><td>O(V²)</td><td style="color:var(--green)">✓ Yes</td><td>Dense graphs, simple code</td></tr>
+        <tr><td>Dijkstra × V</td><td>O(V·(V+E)log V)</td><td>O(V+E)</td><td style="color:var(--red)">✗ No</td><td>Sparse graphs, non-neg weights</td></tr>
+        <tr><td>Bellman-Ford × V</td><td>O(V²E)</td><td>O(V+E)</td><td style="color:var(--green)">✓ Yes</td><td>General (but slow)</td></tr>
+        <tr><td>Johnson's</td><td>O(V²log V + VE)</td><td>O(V+E)</td><td style="color:var(--green)">✓ Yes</td><td>Sparse graphs, neg weights</td></tr>
+      </table>
+      <p>For dense graphs (E = Θ(V²)): Floyd-Warshall O(V³) = Dijkstra × V O(V³log V) — Floyd-Warshall wins! For sparse graphs with non-negative weights, Dijkstra × V is faster.</p>
+    </div>
+
+    <div class="notes-section" id="sec9">
+      <h3>9 — Worked Example (CLRS, 5 Vertices)</h3>
+      <p>Initial weight matrix W (∞ = no direct edge):</p>
+      <div class="worked-example">     1    2    3    4    5
+  1 [  0,   3,   8,   ∞,  -4 ]
+  2 [  ∞,   0,   ∞,   1,   7 ]
+  3 [  ∞,   4,   0,   ∞,   ∞ ]
+  4 [  2,   ∞,  -5,   0,   ∞ ]
+  5 [  ∞,   ∞,   ∞,   6,   0 ]
+
+After Floyd-Warshall (final result):
+     1    2    3    4    5
+  1 [  0,   1,  -3,   2,  -4 ]
+  2 [  3,   0,  -4,   1,  -1 ]
+  3 [  7,   4,   0,   5,   3 ]
+  4 [  2,  -1,  -5,   0,  -2 ]
+  5 [  8,   5,   1,   6,   0 ]
+
+Example: Shortest path 1→3 = -3
+Path: 1 → 5 → 4 → 3
+Weights: -4 + 6 + (-5) = -3  ✓</div>
+    </div>
+  </div>
+</section>
+
+  <!-- MODEXP LECTURE NOTES -->
+  <section id="modexp-lecture-notes">
+    <div class="notes-header" onclick="toggleNotes()">
+      <h2>📚 Lecture Notes — Modular Exponentiation</h2>
+      <button class="notes-toggle" id="modexp-notes-toggle-btn">Collapse ▲</button>
+    </div>
+    <div class="notes-body open" id="modexp-notes-body" style="display:block;">
+      <div class="roadmap">
+        <a href="#modexp-sec1">1. Problem Setup</a>
+        <a href="#modexp-sec2">2. Binary Exponent Idea</a>
+        <a href="#modexp-sec3">3. L→R and R→L</a>
+        <a href="#modexp-sec4">4. Correctness Intuition</a>
+        <a href="#modexp-sec5">5. RSA Example</a>
+        <a href="#modexp-sec6">6. Complexity</a>
+        <a href="#modexp-sec7">7. Common Pitfalls</a>
+      </div>
+
+      <div class="notes-section" id="modexp-sec1">
+        <h3>1 — Problem: Compute a^b mod n Efficiently</h3>
+        <p>Directly computing a^b is expensive and can overflow quickly. We only need the result modulo n, so we reduce after each operation.</p>
+        <div class="key-concept">
+          <div class="kc-title">Key Principle</div>
+          <p>(x * y) mod n = ((x mod n) * (y mod n)) mod n. This allows us to keep numbers small throughout the algorithm.</p>
+        </div>
+      </div>
+
+      <div class="notes-section" id="modexp-sec2">
+        <h3>2 — Binary Exponentiation</h3>
+        <p>Write exponent b in binary. Each bit determines whether we multiply the current result by the current power. This transforms exponentiation into a sequence of squaring operations and occasional multiplies.</p>
+        <div class="key-concept">
+          <div class="kc-title">Bit Interpretation</div>
+          <p>If b = b_t...b_1b_0 in binary, then a^b = product over i where b_i=1 of a^(2^i). Squaring updates powers of two efficiently.</p>
+        </div>
+        <div class="highlight-box">
+          <p><strong>Complexity:</strong> Naive repeated multiplication takes O(b), while binary exponentiation takes O(log b).</p>
+        </div>
+      </div>
+
+      <div class="notes-section" id="modexp-sec3">
+        <h3>3 — Two Variants</h3>
+        <table class="complexity-table">
+          <tr><th>Variant</th><th>Direction</th><th>Main Loop Idea</th></tr>
+          <tr><td>Left-to-Right</td><td>MSB → LSB</td><td>Square each step, multiply when bit is 1</td></tr>
+          <tr><td>Right-to-Left</td><td>LSB → MSB</td><td>Multiply when bit is 1, square base each step</td></tr>
+        </table>
+        <p>Both are correct and efficient. This tool lets you switch methods and compare operation flow.</p>
+      </div>
+
+      <div class="notes-section" id="modexp-sec4">
+        <h3>4 — Correctness Intuition</h3>
+        <p>At each step, an invariant is preserved: the processed bits have already contributed correctly to the current result modulo n.</p>
+        <div class="key-concept">
+          <div class="kc-title">Invariant (L→R)</div>
+          <p>After processing prefix bits b_t...b_i, result equals a^(value of that prefix) mod n.</p>
+        </div>
+        <div class="key-concept">
+          <div class="kc-title">Invariant (R→L)</div>
+          <p>result accumulates contributions from processed low-order bits, while base tracks a^(2^k) mod n at iteration k.</p>
+        </div>
+        <div class="worked-example">Example: 7^13 mod 23
+  13 (binary) = 1101
+  L→R sketch:
+    result=1
+    bit 1: square -> 1, multiply -> 7
+    bit 1: square -> 3, multiply -> 21
+    bit 0: square -> 4
+    bit 1: square -> 16, multiply -> 20
+  Final value = 20</div>
+      </div>
+
+      <div class="notes-section" id="modexp-sec5">
+        <h3>5 — RSA-Style Example</h3>
+        <p>RSA encryption/decryption repeatedly computes m^e mod n or c^d mod n. Efficient modular exponentiation is the core operation.</p>
+        <div class="highlight-box">
+          <p><strong>Try preset:</strong> base=65, exponent=17, modulus=3233 (common teaching RSA parameters).</p>
+        </div>
+      </div>
+
+      <div class="notes-section" id="modexp-sec6">
+        <h3>6 — Complexity and Operation Counts</h3>
+        <table class="complexity-table">
+          <tr><th>Method</th><th>Time</th><th>Typical Ops</th><th>Space</th></tr>
+          <tr><td>Naive multiplication</td><td>O(b)</td><td>b-1 multiplies</td><td>O(1)</td></tr>
+          <tr><td>Binary exponentiation</td><td style="color:var(--green)">O(log b)</td><td>~log2(b) squarings + conditional multiplies</td><td>O(1)</td></tr>
+        </table>
+        <p>This tool displays live counters for squarings and multiplies so students can observe the logarithmic growth directly.</p>
+      </div>
+
+      <div class="notes-section" id="modexp-sec7">
+        <h3>7 — Common Pitfalls</h3>
+        <div class="highlight-box">
+          <p><strong>Pitfall 1:</strong> Forgetting to apply modulo after each multiply/square causes overflow and wrong results.</p>
+        </div>
+        <div class="highlight-box">
+          <p><strong>Pitfall 2:</strong> Mixing bit direction (MSB→LSB vs LSB→MSB) without adjusting update logic.</p>
+        </div>
+        <div class="highlight-box">
+          <p><strong>Pitfall 3:</strong> Using modulus n ≤ 1. Modular arithmetic requires n > 1 for meaningful residue classes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- FFT LECTURE NOTES -->
+<section id="fft-lecture-notes">
+  <div class="notes-header" onclick="toggleNotes()">
+    <h2>📚 Lecture Notes — FFT / DFT</h2>
+    <button class="notes-toggle" id="fft-notes-toggle-btn">Collapse ▲</button>
+  </div>
+  <div class="notes-body open" id="fft-notes-body" style="display:block;">
+    <div class="roadmap">
+      <a href="#fft-sec1">1. Why Frequency Domain?</a>
+      <a href="#fft-sec2">2. DFT Definition</a>
+      <a href="#fft-sec3">3. Cooley-Tukey Idea</a>
+      <a href="#fft-sec4">4. Butterfly Math</a>
+      <a href="#fft-sec5">5. Inverse DFT</a>
+      <a href="#fft-sec6">6. Complexity + Worked Example</a>
+    </div>
+
+    <div class="notes-section" id="fft-sec1">
+      <h3>1 — Why Go to the Frequency Domain?</h3>
+      <p>Many signals look complicated in time-domain samples x[n], but become simple in frequency-domain bins X[k]. A pure sine wave often appears as a clear peak at one frequency bin, while mixtures show multiple peaks.</p>
+      <div class="key-concept">
+        <div class="kc-title">Interpretation</div>
+        <p>Time domain answers: "What is the signal value now?" Frequency domain answers: "Which oscillations are present, and how strong are they?"</p>
+      </div>
+    </div>
+
+    <div class="notes-section" id="fft-sec2">
+      <h3>2 — DFT Definition</h3>
+      <p>The Discrete Fourier Transform maps N samples x[0..N-1] to N frequency coefficients X[0..N-1].</p>
+      <div class="key-concept">
+        <div class="kc-title">Forward Transform</div>
+        <p style="font-family:'Consolas',monospace; font-size:13px; color:var(--teal); margin:8px 0;">X[k] = sum(n=0..N-1) x[n] * e^(-2*pi*i*k*n/N)</p>
+        <p>Each X[k] is a correlation with a complex sinusoid. Large |X[k]| means that frequency is strongly present.</p>
+      </div>
+      <div class="highlight-box">
+        <p><strong>Naive DFT cost:</strong> N outputs × N terms each = O(N²). For large N this quickly becomes expensive.</p>
+      </div>
+    </div>
+
+    <div class="notes-section" id="fft-sec3">
+      <h3>3 — Cooley-Tukey FFT: The Core Insight</h3>
+      <p>FFT reuses repeated terms by splitting the sequence into even and odd indices recursively (or iteratively with bit-reversal + staged butterflies).</p>
+      <div class="key-concept">
+        <div class="kc-title">Divide and Combine</div>
+        <p>Compute smaller transforms, then combine using twiddle factors W_N^k = e^(-2*pi*i*k/N). This reduces work from O(N²) to O(N log N).</p>
+      </div>
+      <p>In this tool, we use iterative Cooley-Tukey: reorder by bit-reversal, then process stages with butterfly width m = 2, 4, 8, ... N.</p>
+    </div>
+
+    <div class="notes-section" id="fft-sec4">
+      <h3>4 — Butterfly Operation (Single Update Unit)</h3>
+      <p>Every stage applies many butterflies. For a pair (u, v) and twiddle w:</p>
+      <div class="worked-example">t = w * v
+top_new = u + t
+bot_new = u - t
+
+where
+u = x[k + j]
+v = x[k + j + m/2]
+w = exp(-2*pi*i*j/m)</div>
+      <p>This one pattern is repeated across all blocks and stages. The visualization panel "Current Butterfly" shows these exact values at each step.</p>
+    </div>
+
+    <div class="notes-section" id="fft-sec5">
+      <h3>5 — Inverse DFT (Reconstruction)</h3>
+      <p>IFFT reconstructs the original signal from X[k]. If implementation is correct, IFFT(FFT(x)) returns x (up to tiny floating-point error).</p>
+      <div class="highlight-box">
+        <p><strong>Inverse Formula:</strong> x[n] = (1/N) * sum(k=0..N-1) X[k] * e^(+2*pi*i*k*n/N)</p>
+      </div>
+      <p>The "Inverse DFT Check" panel reports reconstruction error so you can verify numerical correctness during demos.</p>
+    </div>
+
+    <div class="notes-section" id="fft-sec6">
+      <h3>6 — Complexity and Worked Signal Example</h3>
+      <table class="complexity-table">
+        <tr><th>Method</th><th>Time</th><th>Main Idea</th><th>When Useful</th></tr>
+        <tr><td>Naive DFT</td><td>O(N²)</td><td>Direct sum for each k</td><td>Small N, reference checks</td></tr>
+        <tr><td>FFT (Cooley-Tukey)</td><td style="color:var(--green)">O(N log N)</td><td>Reuse via butterflies</td><td>Real-time and large-N transforms</td></tr>
+      </table>
+      <p>Worked intuition: for N = 16 and x[n] = sin(2*pi*2*n/16), the strongest magnitude bins should appear near k = 2 and its symmetric partner k = 14.</p>
+      <div class="highlight-box">
+        <p><strong>Suggested demo flow:</strong> Generate sine (N=16, freq=2), Build Steps, Play. Then switch to square and chirp to compare broader spectra.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN TOOL -->
+<div id="main-tool">
+
+  <!-- LEFT: CONTROLS -->
+  <aside id="controls">
+
+    <!-- Presets -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-title">Quick Examples</div>
+      <div class="preset-btns">
+        <button class="preset-btn active" onclick="loadPreset('clrs5')" id="preset-clrs5">
+          <span class="pb-icon">📘</span>
+          <span><strong>CLRS Example</strong><br><small style="color:var(--text-muted)">5 vertices, neg weights</small></span>
+        </button>
+        <button class="preset-btn" onclick="loadPreset('simple4')" id="preset-simple4">
+          <span class="pb-icon">🔷</span>
+          <span><strong>Simple 4-node</strong><br><small style="color:var(--text-muted)">All positive weights</small></span>
+        </button>
+        <button class="preset-btn" onclick="loadPreset('negWeights')" id="preset-negWeights">
+          <span class="pb-icon">➖</span>
+          <span><strong>Negative Weights</strong><br><small style="color:var(--text-muted)">4 vertices, neg edges</small></span>
+        </button>
+        <button class="preset-btn" onclick="loadPreset('negCycle')" id="preset-negCycle">
+          <span class="pb-icon">⚠️</span>
+          <span><strong>Negative Cycle</strong><br><small style="color:var(--text-muted)">3 vertices, cycle = -6</small></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Custom Input -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-title">Custom Input</div>
+      <div class="custom-input-area">
+        <div class="size-row">
+          <label>Vertices:</label>
+          <select class="size-select" id="vertex-count" onchange="onVertexCountChange()">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+        <div class="input-hint">Use numbers or ∞ (type "inf" for infinity). Diagonal is 0.</div>
+        <div class="matrix-input-grid" id="matrix-input-grid"></div>
+        <button class="pb-btn primary" onclick="applyCustomInput()" style="width:100%; justify-content:center; margin-top:4px;">
+          ✓ Apply Custom Matrix
+        </button>
+      </div>
+    </div>
+
+    <!-- Speed -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-title">Animation Speed</div>
+      <div class="speed-row">
+        <span class="speed-label">Speed:</span>
+        <input type="range" id="speed-slider" min="0" max="4" step="1" value="2" oninput="onSpeedChange(this.value)">
+        <span class="speed-val" id="speed-display">1.0×</span>
+      </div>
+    </div>
+
+    <!-- Playback -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-title">Playback</div>
+      <div class="playback-btns">
+        <button class="pb-btn primary" id="btn-build" onclick="buildStepsUI()">⚙ Build Steps</button>
+        <button class="pb-btn" id="btn-step" onclick="stepForward()" disabled>▶| Step</button>
+        <button class="pb-btn" id="btn-play" onclick="playAnim()" disabled>▶ Play</button>
+        <button class="pb-btn" id="btn-pause" onclick="pauseAnim()" disabled>⏸ Pause</button>
+        <button class="pb-btn danger" id="btn-reset" onclick="resetAnim()" disabled>↺ Reset</button>
+      </div>
+      <div style="margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div class="step-counter">Step <strong id="step-cur">0</strong> / <strong id="step-total">0</strong></div>
+        <div class="status-badge status-idle" id="status-badge">Idle</div>
+      </div>
+    </div>
+
+    <!-- Counters -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-title">Statistics</div>
+      <div class="counters-grid">
+        <div class="counter-box"><div class="counter-val" id="cnt-comparisons">0</div><div class="counter-label">Comparisons</div></div>
+        <div class="counter-box"><div class="counter-val" id="cnt-updates">0</div><div class="counter-label">Updates</div></div>
+        <div class="counter-box"><div class="counter-val" id="cnt-k">—</div><div class="counter-label">Current k</div></div>
+      </div>
+    </div>
+
+    <!-- Path Query -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-title">Path Reconstruction</div>
+      <div class="path-query">
+        <label>From:</label>
+        <select class="path-select" id="path-from"></select>
+        <label>To:</label>
+        <select class="path-select" id="path-to"></select>
+      </div>
+      <button class="show-path-btn" onclick="showPath()" style="margin-top:8px; width:100%;">
+        🔍 Show Shortest Path
+      </button>
+      <div class="path-result" id="path-result" style="margin-top:8px;">
+        Run the algorithm first, then query a path.
+      </div>
+    </div>
+
+    <!-- Dijkstra Compare -->
+    <div class="ctrl-section" id="dijkstra-compare">
+      <div class="ctrl-section-title">Complexity Comparison</div>
+      <div class="compare-box">
+        <div class="compare-card">
+          <div class="cc-title">Floyd-Warshall</div>
+          <div class="cc-complexity" id="fw-complexity">O(V³)</div>
+          <p id="fw-ops">— operations</p>
+        </div>
+        <div class="compare-card">
+          <div class="cc-title">Dijkstra × V</div>
+          <div class="cc-complexity" id="dijk-complexity">O(V(V+E)logV)</div>
+          <p id="dijk-ops">— operations</p>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- RIGHT: VISUALIZATION -->
+  <section id="visualization">
+
+    <!-- Negative cycle alert -->
+    <div id="neg-cycle-alert">
+      <strong>⚠ Negative Cycle Detected!</strong>
+      <span id="neg-cycle-text"> Vertices on negative cycles have d[i][i] &lt; 0. Shortest paths are undefined (−∞) for paths involving these vertices.</span>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend-bar">
+      <span style="font-size:10px; color:var(--text-muted); font-weight:600; letter-spacing:.5px; text-transform:uppercase; margin-right:4px;">Legend:</span>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--cell-k-bg);border-color:var(--cell-k-border)"></div>Intermediate vertex k</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--cell-active-bg);border-color:var(--cell-active-border)"></div>Cell being evaluated (i,j)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--cell-via-bg);border-color:var(--cell-via-border)"></div>Via cells (i,k) and (k,j)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--cell-updated-bg);border-color:var(--cell-updated-border)"></div>Updated (improved path)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--cell-negcycle-bg);border-color:var(--cell-negcycle-border)"></div>Negative cycle</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--cell-path-bg);border-color:var(--cell-path-border)"></div>Shortest path query</div>
+    </div>
+
+    <!-- Graph + Distance Matrix -->
+    <div class="viz-top-row">
+      <div class="graph-panel">
+        <div class="panel-title">Graph Visualization</div>
+        <svg id="graph-svg" viewBox="0 0 420 280" height="280"></svg>
+      </div>
+      <div class="matrix-panel">
+        <div class="panel-title">Distance Matrix D</div>
+        <div class="matrix-label">D[i][j] = shortest path weight from vertex i to vertex j. Click a cell to query the path.</div>
+        <div class="matrix-wrapper" id="dist-matrix-wrapper"></div>
+      </div>
+    </div>
+
+    <!-- Predecessor Matrix -->
+    <div class="graph-panel">
+      <div class="panel-title">Predecessor Matrix Π</div>
+      <div class="matrix-label">Π[i][j] = predecessor of j on shortest path from i to j. NIL means no path or no intermediate needed.</div>
+      <div class="matrix-wrapper" id="pred-matrix-wrapper"></div>
+    </div>
+
+    <!-- Recurrence -->
+    <div class="recurrence-panel">
+      <div class="panel-title">Current Recurrence</div>
+      <div class="recurrence-display" id="recurrence-display">
+        <span style="color:var(--text-muted)">Build steps to see the recurrence formula with live values.</span>
+      </div>
+    </div>
+
+    <!-- Pseudocode + Explanation -->
+    <div class="viz-bottom-row">
+      <div class="pseudo-panel">
+        <div class="panel-title">Pseudocode</div>
+        <ol class="pseudocode" id="pseudocode">
+          <li data-line="1" data-tip="Initialize D as a copy of the weight matrix W."><span class="pseudo-ln">1</span><span class="pseudo-code"><span class="kw">for</span> i = 1 <span class="kw">to</span> n &nbsp;<span class="comment">// init rows</span></span><div class="pseudo-tooltip">Initialize D[i][j] = w[i][j] for all i, j. Self-distances D[i][i] = 0.</div></li>
+          <li data-line="2" data-tip=""><span class="pseudo-ln">2</span><span class="pseudo-code">&nbsp; <span class="kw">for</span> j = 1 <span class="kw">to</span> n</span><div class="pseudo-tooltip">For each column j, set the initial distance.</div></li>
+          <li data-line="3"><span class="pseudo-ln">3</span><span class="pseudo-code">&nbsp;&nbsp;&nbsp; D[i][j] ← W[i][j]</span><div class="pseudo-tooltip">Copy the direct edge weight (∞ if no edge, 0 if i=j).</div></li>
+          <li data-line="4"><span class="pseudo-ln">4</span><span class="pseudo-code">&nbsp;&nbsp;&nbsp; <span class="kw">if</span> i ≠ j <span class="kw">and</span> W[i][j] &lt; ∞</span><div class="pseudo-tooltip">Predecessor exists only if there is a direct edge from i to j.</div></li>
+          <li data-line="5"><span class="pseudo-ln">5</span><span class="pseudo-code">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Π[i][j] ← i <span class="comment">// direct edge</span></span><div class="pseudo-tooltip">j's predecessor on the direct path from i is i itself.</div></li>
+          <li data-line="6"><span class="pseudo-ln">6</span><span class="pseudo-code">&nbsp;&nbsp;&nbsp; <span class="kw">else</span> Π[i][j] ← NIL</span><div class="pseudo-tooltip">No edge means no predecessor; NIL indicates no known path.</div></li>
+          <li data-line="7"><span class="pseudo-ln">7</span><span class="pseudo-code"><span class="kw">for</span> k = 1 <span class="kw">to</span> n <span class="comment">// intermediate vertex</span></span><div class="pseudo-tooltip">Outer loop: try each vertex k as a potential intermediate on paths. This is the key DP iteration.</div></li>
+          <li data-line="8"><span class="pseudo-ln">8</span><span class="pseudo-code">&nbsp; <span class="kw">for</span> i = 1 <span class="kw">to</span> n</span><div class="pseudo-tooltip">For each source vertex i...</div></li>
+          <li data-line="9"><span class="pseudo-ln">9</span><span class="pseudo-code">&nbsp;&nbsp;&nbsp; <span class="kw">for</span> j = 1 <span class="kw">to</span> n</span><div class="pseudo-tooltip">...and each destination vertex j, check if going via k is shorter.</div></li>
+          <li data-line="10"><span class="pseudo-ln">10</span><span class="pseudo-code">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="kw">if</span> D[i][k]+D[k][j] &lt; D[i][j]</span><div class="pseudo-tooltip">The core recurrence: is the two-leg path (i→k→j) shorter than the current best path from i to j?</div></li>
+          <li data-line="11"><span class="pseudo-ln">11</span><span class="pseudo-code">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D[i][j] ← D[i][k]+D[k][j]</span><div class="pseudo-tooltip">Yes! Update D[i][j] with the shorter distance through k.</div></li>
+          <li data-line="12"><span class="pseudo-ln">12</span><span class="pseudo-code">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Π[i][j] ← Π[k][j]</span><div class="pseudo-tooltip">Update predecessor: the path now goes through k, so the predecessor of j inherits from the k→j path.</div></li>
+          <li data-line="13"><span class="pseudo-ln">13</span><span class="pseudo-code"><span class="kw">return</span> D, Π</span><div class="pseudo-tooltip">Return the final shortest-paths matrix and predecessor matrix. Check diagonal for negative cycles: D[i][i] < 0 means a negative cycle.</div></li>
+        </ol>
+      </div>
+
+      <div class="explanation-panel">
+        <div class="panel-title">Step Explanation</div>
+        <div id="step-explanation">
+          <div class="exp-title">Ready</div>
+          Click <strong>Build Steps</strong>, then use <strong>Step</strong> or <strong>Play</strong> to see line-by-line explanations of what Floyd-Warshall is doing and why.
+        </div>
+      </div>
+    </div>
+
+    <!-- History Table -->
+    <div class="history-panel">
+      <div class="panel-title">Step History <span style="color:var(--text-muted);font-weight:normal;">(click a row to jump)</span></div>
+      <div class="history-scroll">
+        <table class="history-table" id="history-table">
+          <thead>
+            <tr>
+              <th>#</th><th>k</th><th>i</th><th>j</th>
+              <th>D[i][k]</th><th>D[k][j]</th><th>Via</th><th>D[i][j]</th><th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:12px;">Build steps to see history.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+</div>
+
+<!-- FFT TOOL -->
+<div id="fft-tool">
+  <div id="fft-main-tool" style="display:flex;min-height:calc(100vh - 100px);">
+    <aside id="fft-controls" style="width:360px;min-width:320px;background:var(--panel);border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;">
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Signal Generator</div>
+        <div class="fft-signal-form">
+          <div>
+            <label class="fft-mini">Signal Type</label>
+            <select class="fft-input" id="fft-signal-type">
+              <option value="sine">Sine</option>
+              <option value="square">Square</option>
+              <option value="chirp">Chirp</option>
+            </select>
+          </div>
+          <div>
+            <label class="fft-mini">N (power of 2)</label>
+            <select class="fft-input" id="fft-n">
+              <option value="8">8</option>
+              <option value="16" selected>16</option>
+              <option value="32">32</option>
+              <option value="64">64</option>
+              <option value="128">128</option>
+            </select>
+          </div>
+          <div>
+            <label class="fft-mini">Amplitude</label>
+            <input class="fft-input" id="fft-amp" type="number" value="1" step="0.1">
+          </div>
+          <div>
+            <label class="fft-mini">Frequency (cycles)</label>
+            <input class="fft-input" id="fft-freq" type="number" value="2" step="0.1">
+          </div>
+          <div>
+            <label class="fft-mini">Phase (radians)</label>
+            <input class="fft-input" id="fft-phase" type="number" value="0" step="0.1">
+          </div>
+          <div>
+            <label class="fft-mini">Offset</label>
+            <input class="fft-input" id="fft-offset" type="number" value="0" step="0.1">
+          </div>
+          <button class="pb-btn primary full" onclick="fftGenerateSignal()">Generate Signal</button>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Key Formula</div>
+        <div class="key-concept" style="margin:0;">
+          <div class="kc-title">Forward DFT</div>
+          <div class="fft-formula">X[k] = sum(n=0..N-1) x[n] * exp(-2*pi*i*k*n/N)</div>
+          <p style="margin-top:6px;">FFT computes the same output as DFT, but with reusable butterfly structure for O(N log N).</p>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Demo Sequence</div>
+        <ul class="fft-checklist">
+          <li>Set signal to <strong>sine</strong>, N=16, frequency=2.</li>
+          <li>Click <strong>Generate Signal</strong>, then <strong>Build Steps</strong>.</li>
+          <li>Play and observe stage growth: m = 2, 4, 8, 16.</li>
+          <li>Check largest |X[k]| near k=2 and symmetric bin.</li>
+          <li>Switch to square/chirp and compare spectral spread.</li>
+        </ul>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Playback</div>
+        <div class="playback-btns">
+          <button class="pb-btn primary" id="fft-btn-build" onclick="fftBuildSteps()">Build Steps</button>
+          <button class="pb-btn" id="fft-btn-step" onclick="fftStepForward()" disabled>Step</button>
+          <button class="pb-btn" id="fft-btn-play" onclick="fftPlay()" disabled>Play</button>
+          <button class="pb-btn" id="fft-btn-pause" onclick="fftPause()" disabled>Pause</button>
+          <button class="pb-btn danger" id="fft-btn-reset" onclick="fftReset()" disabled>Reset</button>
+        </div>
+        <div style="margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div class="step-counter">Step <strong id="fft-step-cur">0</strong> / <strong id="fft-step-total">0</strong></div>
+          <div class="status-badge status-idle" id="fft-status-badge">Idle</div>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Animation Speed</div>
+        <div class="speed-row">
+          <span class="speed-label">Speed:</span>
+          <input type="range" id="fft-speed-slider" min="0" max="4" step="1" value="2" oninput="fftOnSpeedChange(this.value)">
+          <span class="speed-val" id="fft-speed-display">1.0×</span>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Statistics</div>
+        <div class="fft-kv">
+          <div class="counter-box"><div class="counter-val" id="fft-cnt-stage">0</div><div class="counter-label">Stage</div></div>
+          <div class="counter-box"><div class="counter-val" id="fft-cnt-bfly">0</div><div class="counter-label">Butterflies</div></div>
+          <div class="counter-box"><div class="counter-val" id="fft-cnt-mul">0</div><div class="counter-label">Complex Mul</div></div>
+          <div class="counter-box"><div class="counter-val" id="fft-cnt-add">0</div><div class="counter-label">Complex Add/Sub</div></div>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Complexity Comparison</div>
+        <div class="compare-box">
+          <div class="compare-card">
+            <div class="cc-title">Naive DFT</div>
+            <div class="cc-complexity" id="fft-dft-complexity">O(n^2)</div>
+            <p id="fft-dft-ops">-</p>
+          </div>
+          <div class="compare-card">
+            <div class="cc-title">FFT</div>
+            <div class="cc-complexity" id="fft-fft-complexity">O(n log n)</div>
+            <p id="fft-fft-ops">-</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <section id="fft-visualization" style="flex:1;padding:16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;min-width:0;">
+      <div class="fft-grid">
+        <div class="graph-panel">
+          <div class="panel-title">Time Domain Signal x[n]</div>
+          <svg id="fft-time-chart" class="fft-chart" viewBox="0 0 800 240"></svg>
+        </div>
+
+        <div class="graph-panel">
+          <div class="panel-title">Frequency Magnitude |X[k]|</div>
+          <svg id="fft-freq-chart" class="fft-chart" viewBox="0 0 800 240"></svg>
+        </div>
+
+        <div class="graph-panel">
+          <div class="panel-title">Current Butterfly</div>
+          <div class="fft-butterfly" id="fft-butterfly-info">Generate a signal and build steps to inspect each butterfly operation.</div>
+        </div>
+
+        <div class="graph-panel">
+          <div class="panel-title">Worked Butterfly Example</div>
+          <div class="worked-example" id="fft-butterfly-worked">Build steps to see the numeric substitution for t = w*v, top = u+t, bottom = u-t.</div>
+        </div>
+
+        <div class="viz-bottom-row">
+          <div class="pseudo-panel">
+            <div class="panel-title">FFT Pseudocode</div>
+            <ol class="pseudocode" id="fft-pseudocode">
+              <li data-line="1"><span class="pseudo-ln">1</span><span class="pseudo-code">x ← bitReverse(x)</span><div class="pseudo-tooltip">Reorder indices so iterative butterflies match recursive FFT structure.</div></li>
+              <li data-line="2"><span class="pseudo-ln">2</span><span class="pseudo-code"><span class="kw">for</span> s = 1 to log2(n)</span><div class="pseudo-tooltip">Each stage doubles the butterfly width and merges larger frequency groups.</div></li>
+              <li data-line="3"><span class="pseudo-ln">3</span><span class="pseudo-code">m ← 2^s</span><div class="pseudo-tooltip">m is current block size: 2, 4, 8, ..., N.</div></li>
+              <li data-line="4"><span class="pseudo-ln">4</span><span class="pseudo-code"><span class="kw">for</span> k = 0 to n-1 step m</span><div class="pseudo-tooltip">Process each block independently at this stage.</div></li>
+              <li data-line="5"><span class="pseudo-ln">5</span><span class="pseudo-code"><span class="kw">for</span> j = 0 to m/2 - 1</span><div class="pseudo-tooltip">Each j picks one butterfly pair inside the block.</div></li>
+              <li data-line="6"><span class="pseudo-ln">6</span><span class="pseudo-code">t ← w * x[k+j+m/2]</span><div class="pseudo-tooltip">Apply twiddle factor to the lower-half element.</div></li>
+              <li data-line="7"><span class="pseudo-ln">7</span><span class="pseudo-code">u ← x[k+j]</span><div class="pseudo-tooltip">Read upper-half element before overwriting.</div></li>
+              <li data-line="8"><span class="pseudo-ln">8</span><span class="pseudo-code">x[k+j] ← u + t</span><div class="pseudo-tooltip">Top output: constructive combination.</div></li>
+              <li data-line="9"><span class="pseudo-ln">9</span><span class="pseudo-code">x[k+j+m/2] ← u - t</span><div class="pseudo-tooltip">Bottom output: destructive combination.</div></li>
+            </ol>
+          </div>
+          <div class="explanation-panel">
+            <div class="panel-title">Step Explanation</div>
+            <div id="fft-step-explanation">
+              <div class="exp-title">Ready</div>
+              Generate a signal, then Build Steps. The explanation panel will narrate bit-reversal, stage growth, twiddle usage, and butterfly updates with real values.
+            </div>
+          </div>
+        </div>
+
+        <div class="history-panel">
+          <div class="panel-title">FFT History (click row to jump)</div>
+          <div class="history-scroll">
+            <table class="history-table">
+              <thead>
+                <tr><th>#</th><th>Stage</th><th>Block</th><th>j</th><th>Indices</th><th>Twiddle</th><th>Action</th></tr>
+              </thead>
+              <tbody id="fft-history-body">
+                <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:12px;">Build steps to see FFT history.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="graph-panel">
+          <div class="panel-title">Inverse DFT Check</div>
+          <div id="fft-ifft-check" class="fft-butterfly">After completion, this panel shows IFFT(FFT(x)) reconstruction quality.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- MODEXP TOOL -->
+<div id="modexp-tool">
+  <div id="modexp-main-tool" style="display:flex;min-height:calc(100vh - 100px);">
+    <aside id="modexp-controls" style="width:360px;min-width:320px;background:var(--panel);border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;">
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Parameters</div>
+        <div class="fft-signal-form">
+          <div>
+            <label class="fft-mini">Base (a)</label>
+            <input class="fft-input" id="modexp-base" type="number" value="7" step="1">
+          </div>
+          <div>
+            <label class="fft-mini">Exponent (b)</label>
+            <input class="fft-input" id="modexp-exp" type="number" value="13" step="1">
+          </div>
+          <div>
+            <label class="fft-mini">Modulus (n)</label>
+            <input class="fft-input" id="modexp-mod" type="number" value="23" step="1">
+          </div>
+          <div>
+            <label class="fft-mini">Method</label>
+            <select class="fft-input" id="modexp-method">
+              <option value="lr">Left to Right (MSB→LSB)</option>
+              <option value="rl">Right to Left (LSB→MSB)</option>
+            </select>
+          </div>
+        </div>
+        <div class="playback-btns" style="margin-top:8px;">
+          <button class="pb-btn" onclick="modexpLoadPreset('small')">Preset: 7^13 mod 23</button>
+          <button class="pb-btn" onclick="modexpLoadPreset('rsa')">Preset: RSA Demo</button>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Key Formula</div>
+        <div class="key-concept" style="margin:0;">
+          <div class="kc-title">Square-and-Multiply</div>
+          <div class="fft-formula">result = (result * base) mod n, base = (base * base) mod n</div>
+          <p style="margin-top:6px;">Binary bits decide when multiplication is needed.</p>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Demo Sequence</div>
+        <ul class="fft-checklist">
+          <li>Load preset <strong>7^13 mod 23</strong>.</li>
+          <li>Build steps and play in <strong>L→R</strong> mode.</li>
+          <li>Notice squaring at every bit and multiply only for bit=1.</li>
+          <li>Switch to <strong>R→L</strong> and compare operation order.</li>
+          <li>Run <strong>RSA preset</strong> to see realistic cryptographic parameters.</li>
+        </ul>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Method Insight</div>
+        <div class="modexp-flow" style="font-size:11px;">
+          L→R: square result first, then multiply when bit is 1.<br>
+          R→L: multiply by current base when bit is 1, then square base.<br>
+          Both return the same final residue.
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Playback</div>
+        <div class="playback-btns">
+          <button class="pb-btn primary" id="modexp-btn-build" onclick="modexpBuildSteps()">Build Steps</button>
+          <button class="pb-btn" id="modexp-btn-step" onclick="modexpStepForward()" disabled>Step</button>
+          <button class="pb-btn" id="modexp-btn-play" onclick="modexpPlay()" disabled>Play</button>
+          <button class="pb-btn" id="modexp-btn-pause" onclick="modexpPause()" disabled>Pause</button>
+          <button class="pb-btn danger" id="modexp-btn-reset" onclick="modexpReset()" disabled>Reset</button>
+        </div>
+        <div style="margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div class="step-counter">Step <strong id="modexp-step-cur">0</strong> / <strong id="modexp-step-total">0</strong></div>
+          <div class="status-badge status-idle" id="modexp-status-badge">Idle</div>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Animation Speed</div>
+        <div class="speed-row">
+          <span class="speed-label">Speed:</span>
+          <input type="range" id="modexp-speed-slider" min="0" max="4" step="1" value="2" oninput="modexpOnSpeedChange(this.value)">
+          <span class="speed-val" id="modexp-speed-display">1.0×</span>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Statistics</div>
+        <div class="fft-kv">
+          <div class="counter-box"><div class="counter-val" id="modexp-cnt-square">0</div><div class="counter-label">Squarings</div></div>
+          <div class="counter-box"><div class="counter-val" id="modexp-cnt-mul">0</div><div class="counter-label">Multiplications</div></div>
+          <div class="counter-box"><div class="counter-val" id="modexp-cnt-bit">-</div><div class="counter-label">Current Bit</div></div>
+          <div class="counter-box"><div class="counter-val" id="modexp-cnt-res">-</div><div class="counter-label">Current Result</div></div>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Complexity Comparison</div>
+        <div class="compare-box">
+          <div class="compare-card">
+            <div class="cc-title">Naive</div>
+            <div class="cc-complexity">O(b)</div>
+            <p id="modexp-naive-ops">-</p>
+          </div>
+          <div class="compare-card">
+            <div class="cc-title">Binary Method</div>
+            <div class="cc-complexity">O(log b)</div>
+            <p id="modexp-fast-ops">-</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <section id="modexp-visualization" style="flex:1;padding:16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;min-width:0;">
+      <div class="graph-panel">
+        <div class="panel-title">Binary Exponent Processing</div>
+        <div class="modexp-strip" id="modexp-bit-strip"></div>
+      </div>
+
+      <div class="graph-panel">
+        <div class="panel-title">Current Operation</div>
+        <div class="modexp-flow" id="modexp-current-op">Build steps to see square-and-multiply operations.</div>
+      </div>
+
+      <div class="graph-panel">
+        <div class="panel-title">Worked Numeric Step</div>
+        <div class="worked-example" id="modexp-worked">No step yet.</div>
+      </div>
+
+      <div class="viz-bottom-row">
+        <div class="pseudo-panel">
+          <div class="panel-title">Pseudocode</div>
+          <ol class="pseudocode" id="modexp-pseudocode">
+            <li data-line="1"><span class="pseudo-ln">1</span><span class="pseudo-code">result ← 1</span><div class="pseudo-tooltip">Accumulator for the processed exponent bits.</div></li>
+            <li data-line="2"><span class="pseudo-ln">2</span><span class="pseudo-code">base ← a mod n</span><div class="pseudo-tooltip">Reduce base early to keep values small.</div></li>
+            <li data-line="3"><span class="pseudo-ln">3</span><span class="pseudo-code"><span class="kw">for each</span> bit in exponent</span><div class="pseudo-tooltip">Iterate over exponent bits by selected direction.</div></li>
+            <li data-line="4"><span class="pseudo-ln">4</span><span class="pseudo-code">result ← (result*result) mod n</span><div class="pseudo-tooltip">Square step (L→R) or base square (R→L variant).</div></li>
+            <li data-line="5"><span class="pseudo-ln">5</span><span class="pseudo-code"><span class="kw">if</span> bit = 1</span><div class="pseudo-tooltip">Only set bits trigger multiplication into result.</div></li>
+            <li data-line="6"><span class="pseudo-ln">6</span><span class="pseudo-code">result ← (result*base) mod n</span><div class="pseudo-tooltip">Multiply step adds this power contribution.</div></li>
+            <li data-line="7"><span class="pseudo-ln">7</span><span class="pseudo-code"><span class="kw">return</span> result</span><div class="pseudo-tooltip">Final modular exponentiation value.</div></li>
+          </ol>
+        </div>
+        <div class="explanation-panel">
+          <div class="panel-title">Step Explanation</div>
+          <div id="modexp-step-explanation"><div class="exp-title">Ready</div>Build steps to start.</div>
+        </div>
+      </div>
+
+      <div class="history-panel">
+        <div class="panel-title">History (click to jump)</div>
+        <div class="history-scroll">
+          <table class="history-table">
+            <thead>
+              <tr><th>#</th><th>Type</th><th>Bit</th><th>Value</th><th>Result</th></tr>
+            </thead>
+            <tbody id="modexp-history-body">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:12px;">Build steps to see history.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="graph-panel">
+        <div class="panel-title">Final Check</div>
+        <div class="modexp-flow" id="modexp-final-check">Final result and verification will appear here.</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// CONSTANTS & PRESETS
+// ══════════════════════════════════════════════════════════════
+const INF = 1e9;
+const NODE_R = 18;
+const ARROW_LEN = 10;
+
+const PRESETS = {
+  clrs5: {
+    name: 'CLRS Example',
+    n: 5,
+    matrix: [
+      [0, 3, 8, INF, -4],
+      [INF, 0, INF, 1, 7],
+      [INF, 4, 0, INF, INF],
+      [2, INF, -5, 0, INF],
+      [INF, INF, INF, 6, 0]
+    ]
+  },
+  simple4: {
+    name: 'Simple 4-node',
+    n: 4,
+    matrix: [
+      [0, 5, INF, 10],
+      [INF, 0, 3, INF],
+      [INF, INF, 0, 1],
+      [INF, INF, INF, 0]
+    ]
+  },
+  negWeights: {
+    name: 'Negative Weights',
+    n: 4,
+    matrix: [
+      [0, 2, INF, INF],
+      [INF, 0, -3, INF],
+      [INF, INF, 0, 1],
+      [5, INF, INF, 0]
+    ]
+  },
+  negCycle: {
+    name: 'Negative Cycle',
+    n: 3,
+    matrix: [
+      [0, -2, INF],
+      [INF, 0, -3],
+      [-1, INF, 0]
+    ]
+  }
+};
+
+const SPEED_MAP = [2000, 1000, 500, 250, 100]; // ms per step
+const SPEED_LABELS = ['0.25×', '0.5×', '1.0×', '2.0×', '4.0×'];
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+let state = {
+  n: 5,
+  W: [],           // original weight matrix
+  steps: [],       // pre-computed steps
+  currentStep: -1, // index into steps
+  playing: false,
+  playTimer: null,
+  speed: 2,        // index into SPEED_MAP
+  status: 'idle',  // idle | ready | playing | paused | done | error
+  pathHighlight: null, // {from, to, path: []}
+  done: false,
+  hasNegCycle: false
+};
+
+let currentMode = 'fw';
+
+let fftState = {
+  n: 16,
+  signal: [],
+  spectrum: [],
+  steps: [],
+  currentStep: -1,
+  playing: false,
+  playTimer: null,
+  speed: 2,
+  status: 'idle',
+  done: false,
+  maxInteractiveN: 128
+};
+
+let modexpState = {
+  base: 7,
+  exponent: 13,
+  modulus: 23,
+  method: 'lr',
+  steps: [],
+  currentStep: -1,
+  playing: false,
+  playTimer: null,
+  speed: 2,
+  status: 'idle',
+  done: false,
+  bits: []
+};
+
+// ══════════════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════════════
+function cloneMatrix(m) { return m.map(row => [...row]); }
+function fmt(v) { return (v >= INF/2 || v === null || v === undefined) ? '∞' : v; }
+function fmtP(v) { return (v === null || v === undefined) ? 'NIL' : (v + 1); }
+
+function parseInput(str) {
+  const s = str.trim().toLowerCase();
+  if (s === 'inf' || s === '∞' || s === '') return INF;
+  const n = parseFloat(s);
+  return isNaN(n) ? INF : n;
+}
+
+// ══════════════════════════════════════════════════════════════
+// GRAPH NODE POSITIONS
+// ══════════════════════════════════════════════════════════════
+function getNodePositions(n) {
+  const cx = 210, cy = 140, r = 105;
+  if (n === 3) {
+    return [
+      {x: cx, y: cy - r},
+      {x: cx - r * Math.sin(2*Math.PI/3), y: cy - r * Math.cos(2*Math.PI/3)},
+      {x: cx + r * Math.sin(2*Math.PI/3), y: cy - r * Math.cos(2*Math.PI/3)}
+    ];
+  }
+  return Array.from({length: n}, (_, i) => {
+    const angle = (2 * Math.PI * i / n) - Math.PI / 2;
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// SVG GRAPH RENDERING
+// ══════════════════════════════════════════════════════════════
+function buildGraphSVG(W, n, highlight) {
+  // highlight: { k: int, pathEdges: [[u,v],...], activeI: int }
+  const h = highlight || {};
+  const positions = getNodePositions(n);
+
+  let svg = `<defs>
+    <marker id="arrow-normal" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#4a5568"/>
+    </marker>
+    <marker id="arrow-highlight" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#38bdf8"/>
+    </marker>
+    <marker id="arrow-path" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#a78bfa"/>
+    </marker>
+    <marker id="arrow-via" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#4ade80"/>
+    </marker>
+  </defs>`;
+
+  // Draw edges
+  for (let u = 0; u < n; u++) {
+    for (let v = 0; v < n; v++) {
+      if (u === v) continue;
+      if (W[u][v] >= INF/2) continue;
+
+      const p1 = positions[u];
+      const p2 = positions[v];
+      const hasReverse = W[v][u] < INF/2;
+
+      // Compute direction
+      const dx = p2.x - p1.x, dy = p2.y - p1.y;
+      const len = Math.sqrt(dx*dx + dy*dy);
+      const ux = dx/len, uy = dy/len;
+      // Perpendicular
+      const px = -uy, py = ux;
+
+      const offset = hasReverse ? 8 : 0;
+      const sx = p1.x + ux * NODE_R + px * offset;
+      const sy = p1.y + uy * NODE_R + py * offset;
+      const ex = p2.x - ux * (NODE_R + ARROW_LEN) + px * offset;
+      const ey = p2.y - uy * (NODE_R + ARROW_LEN) + py * offset;
+
+      // Determine edge color/marker
+      const isPath = h.pathEdges && h.pathEdges.some(e => e[0]===u && e[1]===v);
+      const isVia = (h.k !== undefined && h.activeI !== undefined) && 
+                    ((u === h.activeI && v === h.k) || (u === h.k && v === h.activeJ));
+
+      let color, marker;
+      if (isPath) { color = '#a78bfa'; marker = 'arrow-path'; }
+      else if (isVia) { color = '#4ade80'; marker = 'arrow-via'; }
+      else if (h.k !== undefined && (u === h.k || v === h.k)) { color = '#38bdf8'; marker = 'arrow-highlight'; }
+      else { color = '#4a5568'; marker = 'arrow-normal'; }
+
+      const strokeW = isPath ? 2.5 : isVia ? 2 : (h.k !== undefined && (u===h.k||v===h.k)) ? 1.8 : 1.2;
+
+      svg += `<line x1="${sx.toFixed(1)}" y1="${sy.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}"
+        stroke="${color}" stroke-width="${strokeW}" marker-end="url(#${marker})" opacity="${isPath||isVia ? 1 : 0.7}"/>`;
+
+      // Weight label
+      const lx = (sx + ex) / 2 + px * 10;
+      const ly = (sy + ey) / 2 + py * 10;
+      const wColor = isPath ? '#a78bfa' : isVia ? '#4ade80' : (h.k!==undefined && (u===h.k||v===h.k)) ? '#38bdf8' : '#94a3b8';
+      svg += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="middle"
+        font-size="10" fill="${wColor}" font-family="Consolas,monospace" font-weight="${isPath||isVia?'bold':'normal'}">${W[u][v]}</text>`;
+    }
+  }
+
+  // Draw nodes
+  for (let i = 0; i < n; i++) {
+    const p = positions[i];
+    const isK = h.k === i;
+    const isActiveI = h.activeI === i;
+    const isActiveJ = h.activeJ === i;
+    const isOnPath = h.pathNodes && h.pathNodes.includes(i);
+
+    let nodeFill, nodeStroke, nodeStrokeW;
+    if (isOnPath) { nodeFill = '#1a1a3d'; nodeStroke = '#a78bfa'; nodeStrokeW = 2.5; }
+    else if (isK) { nodeFill = '#0f2744'; nodeStroke = '#38bdf8'; nodeStrokeW = 2.5; }
+    else if (isActiveI) { nodeFill = '#3d2200'; nodeStroke = '#f59e0b'; nodeStrokeW = 2; }
+    else if (isActiveJ) { nodeFill = '#1a1a3d'; nodeStroke = '#a78bfa'; nodeStrokeW = 2; }
+    else { nodeFill = '#1a2236'; nodeStroke = '#4a5568'; nodeStrokeW = 1.5; }
+
+    svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${NODE_R}"
+      fill="${nodeFill}" stroke="${nodeStroke}" stroke-width="${nodeStrokeW}"/>`;
+
+    const textColor = isOnPath ? '#a78bfa' : isK ? '#38bdf8' : isActiveI ? '#fbbf24' : '#e2e8f0';
+    svg += `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}"
+      text-anchor="middle" dominant-baseline="middle"
+      font-size="13" fill="${textColor}" font-weight="700" font-family="Consolas,monospace">${i+1}</text>`;
+
+    // Label below for k
+    if (isK) {
+      svg += `<text x="${p.x.toFixed(1)}" y="${(p.y + NODE_R + 12).toFixed(1)}"
+        text-anchor="middle" font-size="9" fill="#38bdf8" font-weight="600">k=${i+1}</text>`;
+    }
+  }
+
+  document.getElementById('graph-svg').innerHTML = svg;
+}
+
+// ══════════════════════════════════════════════════════════════
+// MATRIX TABLE RENDERING
+// ══════════════════════════════════════════════════════════════
+function buildMatrixTable(D, n, highlight, tableId) {
+  const h = highlight || {};
+  let html = `<table class="${tableId === 'dist' ? 'dist-matrix' : 'pred-matrix'}">`;
+  // Header row
+  html += '<tr><th></th>';
+  for (let j = 0; j < n; j++) html += `<th>${j+1}</th>`;
+  html += '</tr>';
+  for (let i = 0; i < n; i++) {
+    html += `<tr><th>${i+1}</th>`;
+    for (let j = 0; j < n; j++) {
+      let cls = [];
+      const inKBand = h.k !== undefined && (i === h.k || j === h.k);
+      const isActive = h.i !== undefined && h.j !== undefined && i === h.i && j === h.j;
+      const isViaIK = h.k !== undefined && h.i !== undefined && i === h.i && j === h.k;
+      const isViaKJ = h.k !== undefined && h.j !== undefined && i === h.k && j === h.j;
+      const isUpdated = h.updated && i === h.updated[0] && j === h.updated[1];
+      const isNegCycle = tableId === 'dist' && i === j && D[i][j] < 0;
+      const isPath = h.pathCells && h.pathCells.some(c => c[0]===i && c[1]===j);
+
+      if (isPath) cls.push('cell-path');
+      else if (isNegCycle) cls.push('cell-negcycle');
+      else if (isUpdated) cls.push('cell-updated', 'flash');
+      else if (isActive) cls.push('cell-active');
+      else if (isViaIK || isViaKJ) cls.push('cell-via');
+      else if (inKBand) cls.push('cell-k');
+
+      if (i === j && cls.length === 0) cls.push('cell-self');
+
+      const val = tableId === 'dist' ? D[i][j] : D[i][j];
+      let displayVal;
+      if (tableId === 'dist') {
+        displayVal = fmt(val);
+        if (fmt(val) === '∞' && cls.indexOf('cell-k') === -1) cls.push('cell-inf');
+      } else {
+        displayVal = fmtP(val);
+      }
+
+      const tdTitle = tableId === 'dist'
+        ? `D[${i+1}][${j+1}] = ${displayVal}${isActive ? ' (evaluating)' : ''}`
+        : `Π[${i+1}][${j+1}] = ${displayVal}`;
+
+      const clickAttr = tableId === 'dist'
+        ? `onclick="onMatrixCellClick(${i},${j})"` : '';
+
+      html += `<td class="${cls.join(' ')}" title="${tdTitle}" ${clickAttr}>${displayVal}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+  return html;
+}
+
+function renderMatrices(D, P, n, highlight) {
+  document.getElementById('dist-matrix-wrapper').innerHTML =
+    buildMatrixTable(D, n, highlight, 'dist');
+  document.getElementById('pred-matrix-wrapper').innerHTML =
+    buildMatrixTable(P, n, highlight, 'pred');
+}
+
+// ══════════════════════════════════════════════════════════════
+// STEP GENERATION
+// ══════════════════════════════════════════════════════════════
+function generateSteps(W, n) {
+  const steps = [];
+  let cmp = 0, upd = 0;
+
+  let D = cloneMatrix(W);
+  let P = Array.from({length: n}, (_, i) =>
+    Array.from({length: n}, (_, j) =>
+      (i !== j && W[i][j] < INF/2) ? i : null
+    )
+  );
+
+  steps.push({
+    type: 'init',
+    k: -1, i: -1, j: -1,
+    D: cloneMatrix(D), P: cloneMatrix(P),
+    desc: `<div class="exp-title">Initialization</div>
+           Copy weight matrix W into distance matrix D. For each edge (i,j) that exists, set Π[i][j] = i (predecessor is i). For non-edges, Π[i][j] = NIL. All diagonal entries D[i][i] = 0.`,
+    lines: [1,2,3,4,5,6],
+    cmp: 0, upd: 0
+  });
+
+  for (let k = 0; k < n; k++) {
+    steps.push({
+      type: 'k_start',
+      k, i: -1, j: -1,
+      D: cloneMatrix(D), P: cloneMatrix(P),
+      desc: `<div class="exp-title">Outer loop: k = ${k+1}</div>
+             Now trying vertex <strong style="color:#38bdf8">${k+1}</strong> as an intermediate vertex. For every pair (i,j), we ask: "Is going i→${k+1}→j shorter than the current best path from i to j?"`,
+      lines: [7],
+      cmp, upd
+    });
+
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        cmp++;
+        const dik = D[i][k];
+        const dkj = D[k][j];
+        const via = (dik < INF/2 && dkj < INF/2) ? dik + dkj : INF;
+        const cur = D[i][j];
+        const improved = via < cur;
+
+        const fDik = fmt(dik), fDkj = fmt(dkj), fVia = fmt(via), fCur = fmt(cur);
+
+        if (improved) {
+          const oldVal = D[i][j];
+          D[i][j] = via;
+          P[i][j] = P[k][j];
+          upd++;
+
+          steps.push({
+            type: 'ij_update',
+            k, i, j,
+            D: cloneMatrix(D), P: cloneMatrix(P),
+                 dik, dkj, cur, via, oldVal, newVal: via,
+            desc: `<div class="exp-title">✅ Updated D[${i+1}][${j+1}]</div>
+                   <div class="exp-formula">D[${i+1}][${j+1}] = min(${fCur}, D[${i+1}][${k+1}] + D[${k+1}][${j+1}])</div>
+                   <div class="exp-formula">= min(${fCur}, ${fDik} + ${fDkj}) = min(${fCur}, ${fVia})</div>
+                   <div class="exp-result exp-improved">Path via vertex ${k+1} is shorter! Updated from ${fmt(oldVal)} → ${fVia}</div>
+                   <div style="margin-top:6px;color:var(--text-muted);font-size:11px;">New path: ${i+1} → ... → ${k+1} → ... → ${j+1}. Updated Π[${i+1}][${j+1}] = ${fmtP(P[i][j])}</div>`,
+            lines: [10,11,12],
+            cmp, upd
+          });
+        } else {
+          steps.push({
+            type: 'ij_check',
+            k, i, j,
+            D: cloneMatrix(D), P: cloneMatrix(P),
+            dik, dkj, via, cur,
+            desc: `<div class="exp-title">Checking D[${i+1}][${j+1}]</div>
+                   <div class="exp-formula">min(D[${i+1}][${j+1}], D[${i+1}][${k+1}] + D[${k+1}][${j+1}])</div>
+                   <div class="exp-formula">= min(${fCur}, ${fDik} + ${fDkj}) = min(${fCur}, ${fVia})</div>
+                   <div class="exp-result exp-no-change">No improvement. ${fCur} ≤ ${fVia}, keeping D[${i+1}][${j+1}] = ${fCur}</div>`,
+            lines: [8,9,10],
+            cmp, upd
+          });
+        }
+      }
+    }
+  }
+
+  // Check negative cycles
+  const negCycles = [];
+  for (let i = 0; i < n; i++) {
+    if (D[i][i] < 0) negCycles.push(i);
+  }
+
+  let doneDesc;
+  if (negCycles.length > 0) {
+    doneDesc = `<div class="exp-title exp-warning">⚠ Negative Cycle Detected!</div>
+                Vertices {${negCycles.map(v=>v+1).join(', ')}} are on negative cycles (D[i][i] &lt; 0). The shortest-path problem has no well-defined solution for paths involving these vertices.`;
+  } else {
+    doneDesc = `<div class="exp-title" style="color:var(--green)">✅ Algorithm Complete!</div>
+                All V² = ${n}×${n} = ${n*n} shortest-path distances have been computed. Total: ${cmp} comparisons, ${upd} updates.<br>
+                <div style="margin-top:6px;color:var(--text-muted);font-size:11px;">Click any cell in the distance matrix, or use the Path Reconstruction tool to trace shortest paths.</div>`;
+  }
+
+  steps.push({
+    type: negCycles.length > 0 ? 'neg_cycle' : 'done',
+    k: -1, i: -1, j: -1,
+    D: cloneMatrix(D), P: cloneMatrix(P),
+    negCycles,
+    desc: doneDesc,
+    lines: [13],
+    cmp, upd
+  });
+
+  return steps;
+}
+
+// ══════════════════════════════════════════════════════════════
+// PATH RECONSTRUCTION
+// ══════════════════════════════════════════════════════════════
+function reconstructPath(P, n, src, dst) {
+  if (src === dst) return [src];
+  if (P[src][dst] === null) return null;
+
+  const path = [];
+  let cur = dst;
+  let safety = 0;
+  while (cur !== src && safety < n * 2) {
+    path.unshift(cur);
+    cur = P[src][cur];
+    if (cur === null) return null;
+    safety++;
+  }
+  path.unshift(src);
+  return path;
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER STEP
+// ══════════════════════════════════════════════════════════════
+function renderStep(stepIdx) {
+  if (stepIdx < 0 || stepIdx >= state.steps.length) return;
+  const s = state.steps[stepIdx];
+  state.currentStep = stepIdx;
+
+  // Update counters
+  document.getElementById('cnt-comparisons').textContent = s.cmp;
+  document.getElementById('cnt-updates').textContent = s.upd;
+  document.getElementById('cnt-k').textContent = s.k >= 0 ? s.k + 1 : '—';
+  document.getElementById('step-cur').textContent = stepIdx + 1;
+
+  // Build highlight object
+  const hl = {};
+  if (s.k >= 0) hl.k = s.k;
+  if (s.i >= 0) hl.i = s.i;
+  if (s.j >= 0) hl.j = s.j;
+  if (s.type === 'ij_update') hl.updated = [s.i, s.j];
+
+  // Add path highlight if active
+  if (state.pathHighlight) {
+    hl.pathCells = [];
+    const path = state.pathHighlight.path;
+    if (path) {
+      const src = state.pathHighlight.from;
+      const dst = state.pathHighlight.to;
+      // Highlight cells along the path in predecessor matrix
+      for (let x = 0; x < path.length - 1; x++) {
+        hl.pathCells.push([src, path[x+1]]);
+      }
+    }
+  }
+
+  // Render matrices
+  renderMatrices(s.D, s.P, state.n, hl);
+
+  // Render graph
+  const graphHL = { k: s.k >= 0 ? s.k : undefined };
+  if (s.i >= 0) graphHL.activeI = s.i;
+  if (s.j >= 0) graphHL.activeJ = s.j;
+  if (state.pathHighlight && state.pathHighlight.path) {
+    const path = state.pathHighlight.path;
+    graphHL.pathEdges = [];
+    for (let x = 0; x < path.length - 1; x++) graphHL.pathEdges.push([path[x], path[x+1]]);
+    graphHL.pathNodes = path;
+  }
+  buildGraphSVG(state.W, state.n, graphHL);
+
+  // Recurrence display
+  updateRecurrenceDisplay(s);
+
+  // Pseudocode highlight
+  document.querySelectorAll('#pseudocode li').forEach(li => li.classList.remove('active'));
+  (s.lines || []).forEach(ln => {
+    const li = document.querySelector(`#pseudocode li[data-line="${ln}"]`);
+    if (li) li.classList.add('active');
+  });
+
+  // Step explanation
+  document.getElementById('step-explanation').innerHTML = s.desc;
+
+  // History highlight
+  document.querySelectorAll('#history-body tr').forEach((tr, idx) => {
+    tr.classList.toggle('history-active', idx === stepIdx);
+    if (idx === stepIdx && !state.playing) tr.scrollIntoView({ block: 'nearest' });
+  });
+
+  // Negative cycle alert
+  if (s.negCycles && s.negCycles.length > 0) {
+    document.getElementById('neg-cycle-alert').style.display = 'block';
+    document.getElementById('neg-cycle-text').textContent =
+      ` Vertices ${s.negCycles.map(v=>v+1).join(', ')} have D[i][i] < 0, indicating a negative cycle. Shortest paths are undefined (−∞).`;
+    state.hasNegCycle = true;
+  }
+
+  // Done state
+  if (s.type === 'done' || s.type === 'neg_cycle') {
+    setStatus('done');
+    state.done = true;
+    // Show dijkstra comparison
+    showComplexityComparison();
+    document.getElementById('dijkstra-compare').style.display = 'block';
+  }
+}
+
+function updateRecurrenceDisplay(s) {
+  const el = document.getElementById('recurrence-display');
+  if (s.type === 'init') {
+    el.innerHTML = `<span style="color:var(--text-muted)">D ← W &nbsp;(copy weight matrix)</span>`;
+    return;
+  }
+  if (s.k < 0) {
+    el.innerHTML = `<span style="color:var(--green)">Algorithm complete — all shortest paths found</span>`;
+    return;
+  }
+  if (s.type === 'k_start') {
+    el.innerHTML = `<span class="rec-k">k = ${s.k+1}</span> &nbsp;— Trying vertex <span class="rec-k">${s.k+1}</span> as intermediate for all pairs (i, j)`;
+    return;
+  }
+  if (s.i < 0) return;
+
+  const dik = fmt(s.dik);
+  const dkj = fmt(s.dkj);
+
+  // Use the step's own data
+  const step = s;
+  const curD = step.type === 'ij_update' ? fmt(step.oldVal) : fmt(step.cur);
+  const viaVal = fmt(step.via);
+
+  const improved = step.type === 'ij_update';
+
+  el.innerHTML =
+    `D[<span class="rec-i">${s.i+1}</span>][<span class="rec-j">${s.j+1}</span>] ` +
+    `= min( <span class="rec-cur">D[${s.i+1}][${s.j+1}]</span>, ` +
+    `D[<span class="rec-i">${s.i+1}</span>][<span class="rec-k">${s.k+1}</span>] + D[<span class="rec-k">${s.k+1}</span>][<span class="rec-j">${s.j+1}</span>] )<br>` +
+    `= min( <span class="rec-cur">${curD}</span>, (${dik} + ${dkj}) = ` +
+    `<span class="rec-via">${viaVal}</span> )` +
+    (improved
+      ? ` → <span class="rec-updated">= ${viaVal} &nbsp;✅ Updated!</span>`
+      : ` → <span class="rec-no-update">= ${curD} &nbsp;(no change)</span>`);
+}
+
+// ══════════════════════════════════════════════════════════════
+// HISTORY TABLE
+// ══════════════════════════════════════════════════════════════
+function buildHistoryTable(steps) {
+  const tbody = document.getElementById('history-body');
+  let html = '';
+  steps.forEach((s, idx) => {
+    if (s.type === 'ij_check' || s.type === 'ij_update') {
+      const isUpd = s.type === 'ij_update';
+      const dik = fmt(steps[idx]?.D?.[s.i]?.[s.k]);
+      const dkj = fmt(steps[idx]?.D?.[s.k]?.[s.j]);
+      const viaVal = fmt(s.via);
+      const curVal = isUpd ? fmt(s.oldVal) : fmt(s.cur);
+      html += `<tr onclick="jumpToStep(${idx})" class="${isUpd ? 'hist-updated' : ''}">
+        <td>${idx+1}</td>
+        <td>${s.k+1}</td>
+        <td>${s.i+1}</td>
+        <td>${s.j+1}</td>
+        <td>${dik}</td>
+        <td>${dkj}</td>
+        <td>${viaVal}</td>
+        <td>${curVal}</td>
+        <td class="${isUpd ? 'hist-updated' : 'hist-check'}">${isUpd ? `→ ${viaVal} ✅` : 'No change'}</td>
+      </tr>`;
+    } else if (s.type === 'k_start') {
+      html += `<tr onclick="jumpToStep(${idx})" style="background:rgba(56,189,248,0.05)">
+        <td>${idx+1}</td>
+        <td colspan="8" style="color:var(--accent);font-weight:600;">── Starting k = ${s.k+1} ──</td>
+      </tr>`;
+    } else {
+      html += `<tr onclick="jumpToStep(${idx})">
+        <td>${idx+1}</td>
+        <td colspan="8" style="color:var(--text-muted);">${s.type === 'init' ? 'Initialization' : s.type === 'done' ? '✅ Complete' : '⚠ Negative Cycle'}</td>
+      </tr>`;
+    }
+  });
+  tbody.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// MATRIX INPUT UI
+// ══════════════════════════════════════════════════════════════
+function buildMatrixInputGrid(n, W) {
+  const grid = document.getElementById('matrix-input-grid');
+  let html = '';
+  // Header row
+  html += '<div class="matrix-input-row"><div style="width:42px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:10px;"> </div>';
+  for (let j = 0; j < n; j++) html += `<div style="width:42px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:10px;">${j+1}</div>`;
+  html += '</div>';
+
+  for (let i = 0; i < n; i++) {
+    html += '<div class="matrix-input-row">';
+    html += `<div style="width:42px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:10px;">${i+1}</div>`;
+    for (let j = 0; j < n; j++) {
+      const isSelf = i === j;
+      const val = W[i][j];
+      const displayVal = isSelf ? '0' : (val >= INF/2 ? 'inf' : val.toString());
+      html += `<input type="text" class="matrix-cell-input${isSelf ? ' self' : ''}"
+        id="minput-${i}-${j}" value="${displayVal}"
+        ${isSelf ? 'readonly' : ''}
+        placeholder="${isSelf ? '0' : '∞'}">`;
+    }
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function readMatrixInput(n) {
+  const W = [];
+  for (let i = 0; i < n; i++) {
+    W.push([]);
+    for (let j = 0; j < n; j++) {
+      if (i === j) { W[i].push(0); continue; }
+      const el = document.getElementById(`minput-${i}-${j}`);
+      W[i].push(el ? parseInput(el.value) : INF);
+    }
+  }
+  return W;
+}
+
+function buildPathSelects(n) {
+  const fromSel = document.getElementById('path-from');
+  const toSel = document.getElementById('path-to');
+  let opts = '';
+  for (let i = 0; i < n; i++) opts += `<option value="${i}">${i+1}</option>`;
+  fromSel.innerHTML = opts;
+  toSel.innerHTML = opts;
+  toSel.value = n > 1 ? '1' : '0';
+}
+
+// ══════════════════════════════════════════════════════════════
+// PLAYBACK CONTROLS
+// ══════════════════════════════════════════════════════════════
+function buildStepsUI() {
+  pauseAnim();
+  state.currentStep = -1;
+  state.done = false;
+  state.hasNegCycle = false;
+  state.pathHighlight = null;
+  document.getElementById('neg-cycle-alert').style.display = 'none';
+  document.getElementById('path-result').className = 'path-result';
+  document.getElementById('path-result').textContent = 'Run the algorithm, then query a path.';
+  document.getElementById('dijkstra-compare').style.display = 'none';
+
+  // Read current matrix
+  state.W = readMatrixInput(state.n);
+  state.steps = generateSteps(state.W, state.n);
+  buildHistoryTable(state.steps);
+
+  document.getElementById('step-total').textContent = state.steps.length;
+  document.getElementById('step-cur').textContent = '0';
+
+  setStatus('ready');
+  setBtns(true);
+  document.getElementById('btn-play').disabled = false;
+  document.getElementById('btn-step').disabled = false;
+  document.getElementById('btn-reset').disabled = false;
+
+  // Show initial state
+  renderStep(0);
+  setStatus('ready');
+}
+
+function stepForward() {
+  const next = state.currentStep + 1;
+  if (next >= state.steps.length) {
+    pauseAnim();
+    setStatus('done');
+    return;
+  }
+  renderStep(next);
+}
+
+function playAnim() {
+  if (state.done) return;
+  if (state.currentStep >= state.steps.length - 1) return;
+  state.playing = true;
+  setStatus('playing');
+  document.getElementById('btn-pause').disabled = false;
+  document.getElementById('btn-play').disabled = true;
+
+  function tick() {
+    if (!state.playing) return;
+    if (state.currentStep >= state.steps.length - 1) {
+      pauseAnim();
+      setStatus('done');
+      return;
+    }
+    stepForward();
+    state.playTimer = setTimeout(tick, SPEED_MAP[state.speed]);
+  }
+  state.playTimer = setTimeout(tick, SPEED_MAP[state.speed]);
+}
+
+function pauseAnim() {
+  state.playing = false;
+  if (state.playTimer) { clearTimeout(state.playTimer); state.playTimer = null; }
+  if (state.status === 'playing') setStatus('paused');
+  document.getElementById('btn-play').disabled = state.done || state.steps.length === 0;
+  document.getElementById('btn-pause').disabled = true;
+}
+
+function resetAnim() {
+  pauseAnim();
+  state.currentStep = -1;
+  state.done = false;
+  state.pathHighlight = null;
+  state.hasNegCycle = false;
+  document.getElementById('neg-cycle-alert').style.display = 'none';
+  document.getElementById('cnt-comparisons').textContent = '0';
+  document.getElementById('cnt-updates').textContent = '0';
+  document.getElementById('cnt-k').textContent = '—';
+  document.getElementById('step-cur').textContent = '0';
+  document.getElementById('dijkstra-compare').style.display = 'none';
+
+  // Show initial graph
+  buildGraphSVG(state.W, state.n, {});
+  renderMatrices(state.W, Array.from({length:state.n},(_,i)=>Array.from({length:state.n},(_,j)=>i!==j&&state.W[i][j]<INF/2?i:null)), state.n, {});
+  document.getElementById('recurrence-display').innerHTML = '<span style="color:var(--text-muted)">Press Build Steps to begin, then Step or Play.</span>';
+  document.getElementById('step-explanation').innerHTML = '<div class="exp-title">Ready</div>Click <strong>Build Steps</strong> to initialize, then use Step or Play.';
+  document.querySelectorAll('#pseudocode li').forEach(li => li.classList.remove('active'));
+  setStatus('ready');
+}
+
+function jumpToStep(idx) {
+  pauseAnim();
+  if (idx < 0 || idx >= state.steps.length) return;
+  setStatus('paused');
+  renderStep(idx);
+}
+
+function setBtns(ready) {
+  document.getElementById('btn-step').disabled = !ready;
+  document.getElementById('btn-play').disabled = !ready;
+  document.getElementById('btn-reset').disabled = !ready;
+  document.getElementById('btn-pause').disabled = true;
+}
+
+function setStatus(s) {
+  state.status = s;
+  const badge = document.getElementById('status-badge');
+  badge.className = 'status-badge status-' + s;
+  badge.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// ══════════════════════════════════════════════════════════════
+// SPEED CONTROL
+// ══════════════════════════════════════════════════════════════
+function onSpeedChange(val) {
+  state.speed = parseInt(val);
+  document.getElementById('speed-display').textContent = SPEED_LABELS[state.speed];
+  if (state.playing) {
+    pauseAnim();
+    playAnim();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// PRESET LOADING
+// ══════════════════════════════════════════════════════════════
+function loadPreset(name) {
+  pauseAnim();
+  const preset = PRESETS[name];
+  if (!preset) return;
+
+  state.n = preset.n;
+  state.W = cloneMatrix(preset.matrix);
+  state.steps = [];
+  state.currentStep = -1;
+  state.done = false;
+  state.pathHighlight = null;
+
+  document.getElementById('vertex-count').value = preset.n;
+  buildMatrixInputGrid(preset.n, state.W);
+  buildPathSelects(preset.n);
+
+  // Highlight active preset
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('preset-' + name)?.classList.add('active');
+
+  // Reset UI
+  document.getElementById('step-total').textContent = '0';
+  document.getElementById('step-cur').textContent = '0';
+  document.getElementById('cnt-comparisons').textContent = '0';
+  document.getElementById('cnt-updates').textContent = '0';
+  document.getElementById('cnt-k').textContent = '—';
+  document.getElementById('neg-cycle-alert').style.display = 'none';
+  document.getElementById('dijkstra-compare').style.display = 'none';
+  document.getElementById('path-result').className = 'path-result';
+  document.getElementById('path-result').textContent = 'Run the algorithm, then query a path.';
+
+  setBtns(false);
+  document.getElementById('btn-build').disabled = false;
+  setStatus('idle');
+
+  // Show initial state
+  const initP = Array.from({length:state.n}, (_,i) =>
+    Array.from({length:state.n}, (_,j) => i!==j && state.W[i][j]<INF/2 ? i : null));
+  buildGraphSVG(state.W, state.n, {});
+  renderMatrices(state.W, initP, state.n, {});
+  document.getElementById('recurrence-display').innerHTML = '<span style="color:var(--text-muted)">Click Build Steps to start the visualization.</span>';
+  document.getElementById('step-explanation').innerHTML = `<div class="exp-title">${preset.name} loaded</div>Click <strong>Build Steps</strong> to pre-compute all ${state.n}³ = ${state.n**3} steps of Floyd-Warshall.`;
+  document.querySelectorAll('#pseudocode li').forEach(li => li.classList.remove('active'));
+}
+
+// ══════════════════════════════════════════════════════════════
+// VERTEX COUNT CHANGE
+// ══════════════════════════════════════════════════════════════
+function onVertexCountChange() {
+  const n = parseInt(document.getElementById('vertex-count').value);
+  state.n = n;
+  // Build identity + INF matrix
+  const W = Array.from({length:n}, (_,i) => Array.from({length:n}, (_,j) => i===j ? 0 : INF));
+  buildMatrixInputGrid(n, W);
+  buildPathSelects(n);
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+}
+
+// ══════════════════════════════════════════════════════════════
+// CUSTOM INPUT
+// ══════════════════════════════════════════════════════════════
+function applyCustomInput() {
+  pauseAnim();
+  state.n = parseInt(document.getElementById('vertex-count').value);
+  state.W = readMatrixInput(state.n);
+  state.steps = [];
+  state.currentStep = -1;
+  state.done = false;
+  state.pathHighlight = null;
+
+  buildPathSelects(state.n);
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+
+  const initP = Array.from({length:state.n}, (_,i) =>
+    Array.from({length:state.n}, (_,j) => i!==j && state.W[i][j]<INF/2 ? i : null));
+  buildGraphSVG(state.W, state.n, {});
+  renderMatrices(state.W, initP, state.n, {});
+
+  document.getElementById('step-total').textContent = '0';
+  document.getElementById('step-cur').textContent = '0';
+  document.getElementById('cnt-comparisons').textContent = '0';
+  document.getElementById('cnt-updates').textContent = '0';
+  document.getElementById('cnt-k').textContent = '—';
+  document.getElementById('neg-cycle-alert').style.display = 'none';
+  document.getElementById('dijkstra-compare').style.display = 'none';
+  document.getElementById('recurrence-display').innerHTML = '<span style="color:var(--text-muted)">Custom matrix applied. Click Build Steps.</span>';
+  document.getElementById('step-explanation').innerHTML = `<div class="exp-title">Custom matrix loaded (${state.n} vertices)</div>Click <strong>Build Steps</strong> to run Floyd-Warshall on your custom graph.`;
+
+  setBtns(false);
+  document.getElementById('btn-build').disabled = false;
+  setStatus('idle');
+}
+
+// ══════════════════════════════════════════════════════════════
+// MATRIX CELL CLICK (PATH QUERY)
+// ══════════════════════════════════════════════════════════════
+function onMatrixCellClick(i, j) {
+  if (!state.done || state.steps.length === 0) return;
+  const stepData = state.currentStep >= 0 ? state.steps[state.currentStep] : null;
+  if (!stepData) return;
+
+  document.getElementById('path-from').value = i;
+  document.getElementById('path-to').value = j;
+  showPath();
+}
+
+// ══════════════════════════════════════════════════════════════
+// SHOW PATH
+// ══════════════════════════════════════════════════════════════
+function showPath() {
+  const from = parseInt(document.getElementById('path-from').value);
+  const to = parseInt(document.getElementById('path-to').value);
+
+  const stepData = state.currentStep >= 0 ? state.steps[state.currentStep] : null;
+  if (!stepData) {
+    document.getElementById('path-result').className = 'path-result';
+    document.getElementById('path-result').textContent = 'Build and run steps first.';
+    return;
+  }
+
+  const P = stepData.P;
+  const D = stepData.D;
+  const dist = D[from][to];
+
+  const pathEl = document.getElementById('path-result');
+
+  if (from === to) {
+    pathEl.className = 'path-result has-path';
+    pathEl.textContent = `Path ${from+1} → ${to+1}: same vertex (distance = 0)`;
+    state.pathHighlight = { from, to, path: [from] };
+    renderStep(state.currentStep);
+    return;
+  }
+
+  const path = reconstructPath(P, state.n, from, to);
+  if (!path || dist >= INF/2) {
+    pathEl.className = 'path-result no-path';
+    pathEl.textContent = `No path exists from ${from+1} to ${to+1} (distance = ∞)`;
+    state.pathHighlight = null;
+    renderStep(state.currentStep);
+    return;
+  }
+
+  const totalWeight = fmt(dist);
+  pathEl.className = 'path-result has-path';
+  pathEl.innerHTML = `<strong>${from+1} → ${to+1}:</strong> ${path.map(v=>v+1).join(' → ')}<br>Distance = ${totalWeight}`;
+
+  state.pathHighlight = { from, to, path };
+  renderStep(state.currentStep);
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODE SWITCHING
+// ══════════════════════════════════════════════════════════════
+function switchMode(mode) {
+  currentMode = mode;
+
+  const fwActive = mode === 'fw';
+  const fftActive = mode === 'fft';
+  const modexpActive = mode === 'modexp';
+
+  document.getElementById('lecture-notes').style.display = fwActive ? 'block' : 'none';
+  document.getElementById('main-tool').style.display = fwActive ? 'flex' : 'none';
+  document.getElementById('fft-lecture-notes').style.display = fftActive ? 'block' : 'none';
+  document.getElementById('fft-tool').style.display = fftActive ? 'block' : 'none';
+  document.getElementById('modexp-lecture-notes').style.display = modexpActive ? 'block' : 'none';
+  document.getElementById('modexp-tool').style.display = modexpActive ? 'block' : 'none';
+
+  document.getElementById('tab-fw').classList.toggle('active', fwActive);
+  document.getElementById('tab-fft').classList.toggle('active', fftActive);
+  document.getElementById('tab-modexp').classList.toggle('active', modexpActive);
+
+  if (fwActive) {
+    document.getElementById('algo-title').innerHTML = 'Floyd-Warshall All-Pairs Shortest Paths<span class="badge" id="algo-badge">CLO-1</span>';
+    document.getElementById('algo-subtitle').innerHTML = 'BSD 404 — Algorithms II &nbsp;|&nbsp; Dr. Arash Kermani &nbsp;|&nbsp; LP, Dynamic Programming &amp; Sorting Networks';
+  } else if (fftActive) {
+    document.getElementById('algo-title').innerHTML = 'Fast Fourier Transform (FFT) / DFT<span class="badge" id="algo-badge">CLO-2</span>';
+    document.getElementById('algo-subtitle').innerHTML = 'BSD 404 — Algorithms II &nbsp;|&nbsp; Dr. Arash Kermani &nbsp;|&nbsp; Fast Matrix Multiplication, Parallel Algorithms &amp; FFT';
+    if (fftState.signal.length === 0) fftGenerateSignal();
+  } else {
+    document.getElementById('algo-title').innerHTML = 'Modular Exponentiation (Square-and-Multiply)<span class="badge" id="algo-badge">CLO-3</span>';
+    document.getElementById('algo-subtitle').innerHTML = 'BSD 404 — Algorithms II &nbsp;|&nbsp; Dr. Arash Kermani &nbsp;|&nbsp; Number-Theoretic Algorithms &amp; Cryptosystems';
+    if (modexpState.steps.length === 0) modexpLoadPreset('small');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// FFT UTILITIES
+// ══════════════════════════════════════════════════════════════
+function c(re, im) { return { re, im }; }
+function cAdd(a, b) { return c(a.re + b.re, a.im + b.im); }
+function cSub(a, b) { return c(a.re - b.re, a.im - b.im); }
+function cMul(a, b) { return c(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re); }
+function cScale(a, s) { return c(a.re * s, a.im * s); }
+function cConj(a) { return c(a.re, -a.im); }
+function cAbs(a) { return Math.sqrt(a.re * a.re + a.im * a.im); }
+function cFmt(a) {
+  const r = Math.abs(a.re) < 1e-10 ? 0 : a.re;
+  const i = Math.abs(a.im) < 1e-10 ? 0 : a.im;
+  const rS = r.toFixed(3);
+  const iS = Math.abs(i).toFixed(3);
+  return `${rS}${i >= 0 ? ' + ' : ' - '}${iS}i`;
+}
+
+function isPowerOfTwo(n) {
+  return n > 0 && (n & (n - 1)) === 0;
+}
+
+function reverseBits(x, bits) {
+  let y = 0;
+  for (let i = 0; i < bits; i++) {
+    y = (y << 1) | (x & 1);
+    x >>= 1;
+  }
+  return y;
+}
+
+function bitReversePermutation(arr) {
+  const n = arr.length;
+  const bits = Math.log2(n);
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) out[reverseBits(i, bits)] = arr[i];
+  return out;
+}
+
+function twiddle(j, m) {
+  const angle = -2 * Math.PI * j / m;
+  return c(Math.cos(angle), Math.sin(angle));
+}
+
+function cloneComplexArray(arr) {
+  return arr.map(z => c(z.re, z.im));
+}
+
+function generateSignal(type, n, amp, freq, phase, offset) {
+  const sig = [];
+  for (let t = 0; t < n; t++) {
+    const x = t / n;
+    let val = 0;
+    if (type === 'sine') {
+      val = amp * Math.sin(2 * Math.PI * freq * x + phase) + offset;
+    } else if (type === 'square') {
+      const s = Math.sin(2 * Math.PI * freq * x + phase);
+      val = amp * (s >= 0 ? 1 : -1) + offset;
+    } else {
+      const sweep = freq + (freq * x);
+      val = amp * Math.sin(2 * Math.PI * sweep * x + phase) + offset;
+    }
+    sig.push(c(val, 0));
+  }
+  return sig;
+}
+
+function magnitudes(arr) {
+  return arr.map(cAbs);
+}
+
+function ifftFromSpectrum(spec) {
+  const n = spec.length;
+  const conj = spec.map(cConj);
+  const inv = fftNoSteps(conj).map(cConj);
+  return inv.map(z => cScale(z, 1 / n));
+}
+
+function fftNoSteps(input) {
+  const n = input.length;
+  let a = bitReversePermutation(cloneComplexArray(input));
+  for (let s = 1; s <= Math.log2(n); s++) {
+    const m = 1 << s;
+    const half = m >> 1;
+    for (let k = 0; k < n; k += m) {
+      for (let j = 0; j < half; j++) {
+        const w = twiddle(j, m);
+        const t = cMul(w, a[k + j + half]);
+        const u = a[k + j];
+        a[k + j] = cAdd(u, t);
+        a[k + j + half] = cSub(u, t);
+      }
+    }
+  }
+  return a;
+}
+
+function fftGenerateSteps(signal) {
+  const n = signal.length;
+  let a = bitReversePermutation(cloneComplexArray(signal));
+  const steps = [];
+  let bfly = 0;
+  let mulOps = 0;
+  let addOps = 0;
+
+  steps.push({
+    type: 'init',
+    lines: [1],
+    stage: 0,
+    block: '-',
+    j: '-',
+    array: cloneComplexArray(a),
+    desc: `<div class="exp-title">Bit-reversal reorder</div>Input reordered for iterative Cooley-Tukey.`,
+    bfly,
+    mulOps,
+    addOps
+  });
+
+  const stages = Math.log2(n);
+  for (let s = 1; s <= stages; s++) {
+    const m = 1 << s;
+    const half = m >> 1;
+
+    steps.push({
+      type: 'stage',
+      lines: [2,3],
+      stage: s,
+      block: '-',
+      j: '-',
+      m,
+      array: cloneComplexArray(a),
+      desc: `<div class="exp-title">Stage ${s}</div>Butterfly size m = ${m}.`,
+      bfly,
+      mulOps,
+      addOps
+    });
+
+    for (let k = 0; k < n; k += m) {
+      for (let j = 0; j < half; j++) {
+        const w = twiddle(j, m);
+        const topIdx = k + j;
+        const botIdx = k + j + half;
+        const u = a[topIdx];
+        const v = a[botIdx];
+        const t = cMul(w, v);
+        const topNew = cAdd(u, t);
+        const botNew = cSub(u, t);
+
+        a[topIdx] = topNew;
+        a[botIdx] = botNew;
+        bfly++;
+        mulOps++;
+        addOps += 2;
+
+        steps.push({
+          type: 'butterfly',
+          lines: [4,5,6,7,8,9],
+          stage: s,
+          block: `${k}..${k + m - 1}`,
+          j,
+          m,
+          topIdx,
+          botIdx,
+          w,
+          u,
+          v,
+          t,
+          topNew,
+          botNew,
+          array: cloneComplexArray(a),
+          desc: `<div class="exp-title">Butterfly update</div><div class="exp-formula">u = x[${topIdx}], v = x[${botIdx}], w = e^(-2πi*${j}/${m})</div><div class="exp-formula">x[${topIdx}] = u + wv, x[${botIdx}] = u - wv</div>`,
+          bfly,
+          mulOps,
+          addOps
+        });
+      }
+    }
+  }
+
+  const spectrum = cloneComplexArray(a);
+  steps.push({
+    type: 'done',
+    lines: [9],
+    stage: Math.log2(n),
+    block: '-',
+    j: '-',
+    array: spectrum,
+    desc: `<div class="exp-title" style="color:var(--green)">FFT complete</div>Computed all ${n} frequency bins.`,
+    bfly,
+    mulOps,
+    addOps
+  });
+
+  return { steps, spectrum };
+}
+
+function drawLineChart(svgId, values, color, yLabel) {
+  const svg = document.getElementById(svgId);
+  if (!svg || !values || values.length === 0) return;
+
+  const w = 800;
+  const h = 240;
+  const padX = 40;
+  const padY = 22;
+  const minY = Math.min(...values);
+  const maxY = Math.max(...values);
+  const span = Math.max(1e-9, maxY - minY);
+
+  let path = '';
+  values.forEach((v, i) => {
+    const x = padX + (i * (w - 2 * padX)) / Math.max(1, values.length - 1);
+    const y = h - padY - ((v - minY) * (h - 2 * padY)) / span;
+    path += `${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)} `;
+  });
+
+  svg.innerHTML = `
+    <rect x="0" y="0" width="${w}" height="${h}" fill="transparent"/>
+    <line x1="${padX}" y1="${h - padY}" x2="${w - padX}" y2="${h - padY}" stroke="#475569" stroke-width="1"/>
+    <line x1="${padX}" y1="${padY}" x2="${padX}" y2="${h - padY}" stroke="#475569" stroke-width="1"/>
+    <text x="${padX + 4}" y="${padY + 12}" fill="#94a3b8" font-size="11">${yLabel}</text>
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="2"/>
+  `;
+}
+
+function drawBarChart(svgId, values) {
+  const svg = document.getElementById(svgId);
+  if (!svg || !values || values.length === 0) return;
+  const w = 800;
+  const h = 240;
+  const padX = 40;
+  const padY = 22;
+  const maxV = Math.max(...values, 1e-9);
+  const barW = (w - 2 * padX) / values.length;
+
+  let bars = '';
+  values.forEach((v, i) => {
+    const bh = ((h - 2 * padY) * v) / maxV;
+    const x = padX + i * barW + 1;
+    const y = h - padY - bh;
+    bars += `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${Math.max(1, barW - 2).toFixed(2)}" height="${bh.toFixed(2)}" fill="#2dd4bf" opacity="0.85"/>`;
+  });
+
+  svg.innerHTML = `
+    <line x1="${padX}" y1="${h - padY}" x2="${w - padX}" y2="${h - padY}" stroke="#475569" stroke-width="1"/>
+    <line x1="${padX}" y1="${padY}" x2="${padX}" y2="${h - padY}" stroke="#475569" stroke-width="1"/>
+    ${bars}
+  `;
+}
+
+function fftSetStatus(s) {
+  fftState.status = s;
+  const badge = document.getElementById('fft-status-badge');
+  badge.className = 'status-badge status-' + s;
+  badge.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function fftSetControlsReady(ready) {
+  document.getElementById('fft-btn-step').disabled = !ready;
+  document.getElementById('fft-btn-play').disabled = !ready;
+  document.getElementById('fft-btn-reset').disabled = !ready;
+  document.getElementById('fft-btn-pause').disabled = true;
+}
+
+function fftUpdateComplexity() {
+  const n = fftState.n;
+  const dftOps = n * n;
+  const fftOps = Math.round(n * Math.log2(n));
+  document.getElementById('fft-dft-ops').textContent = `~ ${dftOps} core terms`;
+  document.getElementById('fft-fft-ops').textContent = `~ ${fftOps} butterfly scale`;
+}
+
+function fftGenerateSignal() {
+  const n = parseInt(document.getElementById('fft-n').value, 10);
+  const type = document.getElementById('fft-signal-type').value;
+  const amp = parseFloat(document.getElementById('fft-amp').value);
+  const freq = parseFloat(document.getElementById('fft-freq').value);
+  const phase = parseFloat(document.getElementById('fft-phase').value);
+  const offset = parseFloat(document.getElementById('fft-offset').value);
+
+  if (!isPowerOfTwo(n) || n > fftState.maxInteractiveN) {
+    document.getElementById('fft-step-explanation').innerHTML = `<div class="exp-title exp-warning">Invalid size</div>N must be a power of 2 and <= ${fftState.maxInteractiveN} for smooth interactive playback.`;
+    return;
+  }
+
+  fftPause();
+  fftState.n = n;
+  fftState.signal = generateSignal(type, n, amp, freq, phase, offset);
+  fftState.steps = [];
+  fftState.currentStep = -1;
+  fftState.done = false;
+
+  const periodBins = freq;
+
+  drawLineChart('fft-time-chart', fftState.signal.map(z => z.re), '#38bdf8', 'x[n]');
+  drawBarChart('fft-freq-chart', new Array(n).fill(0));
+  document.getElementById('fft-butterfly-info').textContent = 'Signal ready. Click Build Steps to compute FFT stages.';
+  document.getElementById('fft-step-total').textContent = '0';
+  document.getElementById('fft-step-cur').textContent = '0';
+  document.getElementById('fft-history-body').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:12px;">Build steps to see FFT history.</td></tr>';
+  document.getElementById('fft-ifft-check').textContent = 'After completion, this panel shows IFFT(FFT(x)) reconstruction quality.';
+  document.getElementById('fft-butterfly-worked').textContent = 'Build steps to see the numeric substitution for t = w*v, top = u+t, bottom = u-t.';
+  document.getElementById('fft-step-explanation').innerHTML =
+    `<div class="exp-title">Signal Generated</div>` +
+    `<div>Type: <strong>${type}</strong>, N = <strong>${n}</strong>, amplitude = ${amp}, frequency cycles = ${freq}, phase = ${phase}, offset = ${offset}.</div>` +
+    `<div style="margin-top:6px;color:var(--text-muted);">Expectation: dominant bins should appear near k ≈ ${periodBins.toFixed(2)} (and symmetric partner).</div>`;
+
+  fftSetControlsReady(false);
+  document.getElementById('fft-btn-build').disabled = false;
+  fftSetStatus('idle');
+  fftUpdateComplexity();
+}
+
+function fftBuildHistory(steps) {
+  let html = '';
+  steps.forEach((s, idx) => {
+    const tw = s.w ? cFmt(s.w) : '-';
+    const indices = s.type === 'butterfly' ? `${s.topIdx}, ${s.botIdx}` : '-';
+    html += `<tr onclick="fftJumpTo(${idx})">
+      <td>${idx + 1}</td>
+      <td>${s.stage}</td>
+      <td>${s.block}</td>
+      <td>${s.j}</td>
+      <td>${indices}</td>
+      <td>${tw}</td>
+      <td>${s.type}</td>
+    </tr>`;
+  });
+  document.getElementById('fft-history-body').innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:12px;">No steps generated.</td></tr>';
+}
+
+function fftBuildSteps() {
+  if (!fftState.signal.length) fftGenerateSignal();
+  if (!fftState.signal.length) return;
+
+  const { steps, spectrum } = fftGenerateSteps(fftState.signal);
+  fftState.steps = steps;
+  fftState.spectrum = spectrum;
+  fftState.currentStep = -1;
+  fftState.done = false;
+
+  document.getElementById('fft-step-total').textContent = steps.length;
+  document.getElementById('fft-step-cur').textContent = '0';
+  fftBuildHistory(steps);
+  fftSetControlsReady(true);
+  fftSetStatus('ready');
+  document.getElementById('fft-step-explanation').innerHTML =
+    `<div class="exp-title">Steps Built</div>` +
+    `<div>Generated <strong>${steps.length}</strong> visualization steps for N = ${fftState.n}.</div>` +
+    `<div style="margin-top:6px;color:var(--text-muted);">Stages: ${Math.log2(fftState.n)}. Use Step/Play to observe each butterfly and twiddle update.</div>`;
+  fftRenderStep(0);
+}
+
+function fftRenderStep(idx) {
+  if (idx < 0 || idx >= fftState.steps.length) return;
+  const s = fftState.steps[idx];
+  fftState.currentStep = idx;
+
+  document.getElementById('fft-step-cur').textContent = idx + 1;
+  document.getElementById('fft-cnt-stage').textContent = s.stage;
+  document.getElementById('fft-cnt-bfly').textContent = s.bfly;
+  document.getElementById('fft-cnt-mul').textContent = s.mulOps;
+  document.getElementById('fft-cnt-add').textContent = s.addOps;
+
+  drawLineChart('fft-time-chart', fftState.signal.map(z => z.re), '#38bdf8', 'x[n]');
+  drawBarChart('fft-freq-chart', magnitudes(s.array));
+
+  if (s.type === 'butterfly') {
+    document.getElementById('fft-butterfly-info').innerHTML =
+      `Stage ${s.stage}, block ${s.block}, j=${s.j}<br>` +
+      `w = ${cFmt(s.w)}<br>` +
+      `u = x[${s.topIdx}] = ${cFmt(s.u)}<br>` +
+      `v = x[${s.botIdx}] = ${cFmt(s.v)}<br>` +
+      `x[${s.topIdx}] = ${cFmt(s.topNew)}<br>` +
+      `x[${s.botIdx}] = ${cFmt(s.botNew)}`;
+  } else {
+    document.getElementById('fft-butterfly-info').innerHTML = `Stage ${s.stage}: ${s.type} step`;
+  }
+
+  if (s.type === 'butterfly') {
+    const twAngle = (-2 * Math.PI * s.j / s.m).toFixed(4);
+    document.getElementById('fft-butterfly-worked').textContent =
+`Stage ${s.stage}, block ${s.block}, j=${s.j}
+w = exp(-2*pi*i*${s.j}/${s.m}) = exp(i*${twAngle}) = ${cFmt(s.w)}
+u = x[${s.topIdx}] = ${cFmt(s.u)}
+v = x[${s.botIdx}] = ${cFmt(s.v)}
+t = w*v = ${cFmt(s.t)}
+top = u + t = ${cFmt(s.topNew)}
+bottom = u - t = ${cFmt(s.botNew)}`;
+  } else if (s.type === 'stage') {
+    document.getElementById('fft-butterfly-worked').textContent =
+`Stage ${s.stage} setup
+Block size m = ${s.m}
+Half size = m/2 = ${s.m / 2}
+At this stage we combine size-${s.m / 2} transforms into size-${s.m} transforms.`;
+  } else if (s.type === 'init') {
+    document.getElementById('fft-butterfly-worked').textContent =
+`Initialization
+Input is reordered with bit-reversal before staged butterflies.
+This allows iterative computation to follow recursive dependency order.`;
+  } else if (s.type === 'done') {
+    document.getElementById('fft-butterfly-worked').textContent =
+`FFT complete
+All butterfly stages are finished.
+Use the frequency chart and largest-bin note to interpret dominant components.`;
+  }
+
+  let extra = '';
+  if (s.type === 'stage') {
+    extra = `<div style="margin-top:6px;color:var(--text-muted);">At stage ${s.stage}, block size is m=${s.m}. The algorithm combines subproblems of size ${s.m / 2} into size ${s.m}.</div>`;
+  } else if (s.type === 'butterfly') {
+    extra =
+      `<div style="margin-top:6px;color:var(--text-muted);">This butterfly mixes indices ${s.topIdx} and ${s.botIdx}.` +
+      ` Twiddle angle = -2*pi*${s.j}/${s.m}.` +
+      ` top = u + wv, bottom = u - wv.</div>`;
+  } else if (s.type === 'init') {
+    extra = `<div style="margin-top:6px;color:var(--text-muted);">Bit-reversal arranges data so iterative updates match recursive FFT dependency order.</div>`;
+  } else if (s.type === 'done') {
+    const mags = magnitudes(s.array);
+    let topK = 0;
+    for (let i = 1; i < mags.length; i++) {
+      if (mags[i] > mags[topK]) topK = i;
+    }
+    extra = `<div style="margin-top:6px;color:var(--text-muted);">Largest magnitude bin: k=${topK}, |X[k]|=${mags[topK].toFixed(4)}. Check symmetry for real-valued inputs.</div>`;
+  }
+  document.getElementById('fft-step-explanation').innerHTML = s.desc + extra;
+  document.querySelectorAll('#fft-pseudocode li').forEach(li => li.classList.remove('active'));
+  (s.lines || []).forEach(ln => {
+    const li = document.querySelector(`#fft-pseudocode li[data-line="${ln}"]`);
+    if (li) li.classList.add('active');
+  });
+
+  document.querySelectorAll('#fft-history-body tr').forEach((tr, i) => {
+    tr.classList.toggle('history-active', i === idx);
+  });
+
+  if (s.type === 'done') {
+    fftSetStatus('done');
+    fftState.done = true;
+    const recon = ifftFromSpectrum(s.array);
+    const errs = recon.map((z, i) => Math.abs(z.re - fftState.signal[i].re));
+    const maxErr = Math.max(...errs);
+    const avgErr = errs.reduce((acc, v) => acc + v, 0) / Math.max(1, errs.length);
+    document.getElementById('fft-ifft-check').innerHTML =
+      `Max reconstruction error: <strong style="color:var(--green)">${maxErr.toExponential(3)}</strong><br>` +
+      `Average error: <strong style="color:var(--green)">${avgErr.toExponential(3)}</strong><br>` +
+      `First samples: ${recon.slice(0, Math.min(6, recon.length)).map(z => z.re.toFixed(3)).join(', ')}`;
+  }
+}
+
+function fftStepForward() {
+  const next = fftState.currentStep + 1;
+  if (next >= fftState.steps.length) {
+    fftPause();
+    fftSetStatus('done');
+    return;
+  }
+  fftRenderStep(next);
+}
+
+function fftJumpTo(idx) {
+  fftPause();
+  fftRenderStep(idx);
+  if (!fftState.done) fftSetStatus('paused');
+}
+
+function fftPlay() {
+  if (fftState.done || fftState.currentStep >= fftState.steps.length - 1) return;
+  fftState.playing = true;
+  fftSetStatus('playing');
+  document.getElementById('fft-btn-pause').disabled = false;
+  document.getElementById('fft-btn-play').disabled = true;
+
+  function tick() {
+    if (!fftState.playing) return;
+    if (fftState.currentStep >= fftState.steps.length - 1) {
+      fftPause();
+      fftSetStatus('done');
+      return;
+    }
+    fftStepForward();
+    fftState.playTimer = setTimeout(tick, SPEED_MAP[fftState.speed]);
+  }
+
+  fftState.playTimer = setTimeout(tick, SPEED_MAP[fftState.speed]);
+}
+
+function fftPause() {
+  fftState.playing = false;
+  if (fftState.playTimer) {
+    clearTimeout(fftState.playTimer);
+    fftState.playTimer = null;
+  }
+  if (fftState.status === 'playing') fftSetStatus('paused');
+  document.getElementById('fft-btn-play').disabled = fftState.done || fftState.steps.length === 0;
+  document.getElementById('fft-btn-pause').disabled = true;
+}
+
+function fftReset() {
+  fftPause();
+  fftState.steps = [];
+  fftState.currentStep = -1;
+  fftState.done = false;
+  document.getElementById('fft-step-cur').textContent = '0';
+  document.getElementById('fft-step-total').textContent = '0';
+  document.getElementById('fft-cnt-stage').textContent = '0';
+  document.getElementById('fft-cnt-bfly').textContent = '0';
+  document.getElementById('fft-cnt-mul').textContent = '0';
+  document.getElementById('fft-cnt-add').textContent = '0';
+  document.getElementById('fft-history-body').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:12px;">Build steps to see FFT history.</td></tr>';
+  drawLineChart('fft-time-chart', fftState.signal.map(z => z.re), '#38bdf8', 'x[n]');
+  drawBarChart('fft-freq-chart', new Array(fftState.n).fill(0));
+  document.getElementById('fft-butterfly-info').textContent = 'Signal ready. Click Build Steps to compute FFT stages.';
+  document.getElementById('fft-butterfly-worked').textContent = 'Build steps to see the numeric substitution for t = w*v, top = u+t, bottom = u-t.';
+  document.getElementById('fft-ifft-check').textContent = 'After completion, this panel shows IFFT(FFT(x)) reconstruction quality.';
+  document.querySelectorAll('#fft-pseudocode li').forEach(li => li.classList.remove('active'));
+  fftSetStatus('idle');
+  fftSetControlsReady(false);
+}
+
+function fftOnSpeedChange(val) {
+  fftState.speed = parseInt(val, 10);
+  document.getElementById('fft-speed-display').textContent = SPEED_LABELS[fftState.speed];
+  if (fftState.playing) {
+    fftPause();
+    fftPlay();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODEXP (PART 3)
+// ══════════════════════════════════════════════════════════════
+function mod(n, m) {
+  return ((n % m) + m) % m;
+}
+
+function modPowBigInt(base, exp, modn) {
+  let b = BigInt(base);
+  let e = BigInt(exp);
+  const m = BigInt(modn);
+  let r = 1n;
+  b = ((b % m) + m) % m;
+  while (e > 0n) {
+    if (e & 1n) r = (r * b) % m;
+    b = (b * b) % m;
+    e >>= 1n;
+  }
+  return r;
+}
+
+function modexpSetStatus(s) {
+  modexpState.status = s;
+  const badge = document.getElementById('modexp-status-badge');
+  badge.className = 'status-badge status-' + s;
+  badge.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function modexpSetControlsReady(ready) {
+  document.getElementById('modexp-btn-step').disabled = !ready;
+  document.getElementById('modexp-btn-play').disabled = !ready;
+  document.getElementById('modexp-btn-reset').disabled = !ready;
+  document.getElementById('modexp-btn-pause').disabled = true;
+}
+
+function modexpLoadPreset(name) {
+  if (name === 'rsa') {
+    document.getElementById('modexp-base').value = 65;
+    document.getElementById('modexp-exp').value = 17;
+    document.getElementById('modexp-mod').value = 3233;
+    document.getElementById('modexp-method').value = 'lr';
+  } else {
+    document.getElementById('modexp-base').value = 7;
+    document.getElementById('modexp-exp').value = 13;
+    document.getElementById('modexp-mod').value = 23;
+    document.getElementById('modexp-method').value = 'lr';
+  }
+  modexpReset();
+  modexpSetStatus('idle');
+  document.getElementById('modexp-step-explanation').innerHTML =
+    '<div class="exp-title">Preset loaded</div>' +
+    'Press Build Steps to generate a full trace with binary bits, operation counters, and worked modular substitutions.';
+}
+
+function modexpUpdateComplexity() {
+  const b = Math.max(0, modexpState.exponent);
+  const naiveOps = b;
+  const fastOps = Math.max(1, Math.floor(Math.log2(Math.max(1, b))) + 1);
+  document.getElementById('modexp-naive-ops').textContent = `~ ${naiveOps} multiplications`;
+  document.getElementById('modexp-fast-ops').textContent = `~ ${fastOps} bit-iterations`;
+}
+
+function modexpRenderBits(activeBitPos = -1) {
+  const el = document.getElementById('modexp-bit-strip');
+  const bits = modexpState.bits;
+  if (!bits.length) {
+    el.innerHTML = '<span style="color:var(--text-muted)">No bits yet.</span>';
+    return;
+  }
+  let html = '';
+  for (let i = 0; i < bits.length; i++) {
+    const cls = ['modexp-bit'];
+    if (i < activeBitPos) cls.push('done');
+    if (i === activeBitPos) cls.push('active');
+    html += `<span class="${cls.join(' ')}" title="bit ${i} = ${bits[i]}">${bits[i]}</span>`;
+  }
+  el.innerHTML = html;
+}
+
+function modexpGenerateSteps(base, exponent, modulus, method) {
+  const steps = [];
+  let result = 1;
+  let curBase = mod(base, modulus);
+  let squares = 0;
+  let mults = 0;
+  const bits = exponent.toString(2).split('').map(Number);
+
+  steps.push({
+    type: 'init',
+    lines: [1,2],
+    bitPos: -1,
+    bitVal: '-',
+    result,
+    base: curBase,
+    squares,
+    mults,
+    desc: `<div class="exp-title">Initialization</div>result = 1, base = ${base} mod ${modulus} = ${curBase}. Binary exponent = ${bits.join('')}.`,
+    worked: `result = 1\nbase = ${base} mod ${modulus} = ${curBase}`
+  });
+
+  if (method === 'lr') {
+    for (let i = 0; i < bits.length; i++) {
+      const bit = bits[i];
+      const beforeSquare = result;
+      result = mod(result * result, modulus);
+      squares++;
+      steps.push({
+        type: 'square',
+        lines: [3,4],
+        bitPos: i,
+        bitVal: bit,
+        result,
+        base: curBase,
+        squares,
+        mults,
+        desc: `<div class="exp-title">Square (bit ${i}, value ${bit})</div>Square accumulator modulo n.`,
+        worked: `result = (${beforeSquare} * ${beforeSquare}) mod ${modulus} = ${result}`
+      });
+
+      if (bit === 1) {
+        const beforeMul = result;
+        result = mod(result * curBase, modulus);
+        mults++;
+        steps.push({
+          type: 'multiply',
+          lines: [5,6],
+          bitPos: i,
+          bitVal: bit,
+          result,
+          base: curBase,
+          squares,
+          mults,
+          desc: `<div class="exp-title">Multiply (bit=1)</div>Include current base contribution for this set bit.`,
+          worked: `result = (${beforeMul} * ${curBase}) mod ${modulus} = ${result}`
+        });
+      }
+    }
+  } else {
+    let e = exponent;
+    const totalBits = bits.length;
+    let pos = 0;
+    while (e > 0) {
+      const bit = e & 1;
+      const bitIndexFromLeft = totalBits - 1 - pos;
+      if (bit === 1) {
+        const beforeMul = result;
+        result = mod(result * curBase, modulus);
+        mults++;
+        steps.push({
+          type: 'multiply',
+          lines: [5,6],
+          bitPos: bitIndexFromLeft,
+          bitVal: bit,
+          result,
+          base: curBase,
+          squares,
+          mults,
+          desc: `<div class="exp-title">Multiply (LSB bit=1)</div>Current bit contributes to result.`,
+          worked: `result = (${beforeMul} * ${curBase}) mod ${modulus} = ${result}`
+        });
+      }
+
+      const beforeSquareBase = curBase;
+      curBase = mod(curBase * curBase, modulus);
+      squares++;
+      e = Math.floor(e / 2);
+      steps.push({
+        type: 'square',
+        lines: [3,4],
+        bitPos: bitIndexFromLeft,
+        bitVal: bit,
+        result,
+        base: curBase,
+        squares,
+        mults,
+        desc: `<div class="exp-title">Square Base (R→L)</div>Prepare next power of two contribution.`,
+        worked: `base = (${beforeSquareBase} * ${beforeSquareBase}) mod ${modulus} = ${curBase}`
+      });
+      pos++;
+    }
+  }
+
+  steps.push({
+    type: 'done',
+    lines: [7],
+    bitPos: bits.length,
+    bitVal: '-',
+    result,
+    base: curBase,
+    squares,
+    mults,
+    desc: `<div class="exp-title" style="color:var(--green)">Computation Complete</div>${base}<sup>${exponent}</sup> mod ${modulus} = <strong>${result}</strong>.`,
+    worked: `Final result = ${result}`
+  });
+
+  return { steps, bits };
+}
+
+function modexpBuildHistory(steps) {
+  let html = '';
+  steps.forEach((s, idx) => {
+    html += `<tr onclick="modexpJumpTo(${idx})">
+      <td>${idx + 1}</td>
+      <td>${s.type}</td>
+      <td>${s.bitVal}</td>
+      <td>${s.base}</td>
+      <td>${s.result}</td>
+    </tr>`;
+  });
+  document.getElementById('modexp-history-body').innerHTML = html || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:12px;">No steps generated.</td></tr>';
+}
+
+function modexpBuildSteps() {
+  const base = parseInt(document.getElementById('modexp-base').value, 10);
+  const exponent = parseInt(document.getElementById('modexp-exp').value, 10);
+  const modulus = parseInt(document.getElementById('modexp-mod').value, 10);
+  const method = document.getElementById('modexp-method').value;
+
+  if (!Number.isFinite(base) || !Number.isFinite(exponent) || !Number.isFinite(modulus) || modulus <= 1 || exponent < 0) {
+    document.getElementById('modexp-step-explanation').innerHTML = '<div class="exp-title exp-warning">Invalid input</div>Use integer base/exponent and modulus > 1.';
+    return;
+  }
+
+  modexpPause();
+  modexpState.base = base;
+  modexpState.exponent = exponent;
+  modexpState.modulus = modulus;
+  modexpState.method = method;
+
+  const generated = modexpGenerateSteps(base, exponent, modulus, method);
+  modexpState.steps = generated.steps;
+  modexpState.bits = generated.bits;
+  modexpState.currentStep = -1;
+  modexpState.done = false;
+
+  document.getElementById('modexp-step-total').textContent = modexpState.steps.length;
+  document.getElementById('modexp-step-cur').textContent = '0';
+  modexpBuildHistory(modexpState.steps);
+  modexpRenderBits(-1);
+  modexpSetControlsReady(true);
+  modexpSetStatus('ready');
+  modexpUpdateComplexity();
+  document.getElementById('modexp-step-explanation').innerHTML =
+    `<div class="exp-title">Steps Built</div>` +
+    `<div>Method: <strong>${method === 'lr' ? 'Left-to-Right' : 'Right-to-Left'}</strong>.` +
+    ` Binary exponent: <strong>${modexpState.bits.join('')}</strong>.</div>` +
+    `<div style="margin-top:6px;color:var(--text-muted);">Follow each bit to see exactly when squaring and multiplication happen.</div>`;
+  modexpRenderStep(0);
+}
+
+function modexpRenderStep(idx) {
+  if (idx < 0 || idx >= modexpState.steps.length) return;
+  const s = modexpState.steps[idx];
+  modexpState.currentStep = idx;
+
+  document.getElementById('modexp-step-cur').textContent = idx + 1;
+  document.getElementById('modexp-cnt-square').textContent = s.squares;
+  document.getElementById('modexp-cnt-mul').textContent = s.mults;
+  document.getElementById('modexp-cnt-bit').textContent = s.bitVal;
+  document.getElementById('modexp-cnt-res').textContent = s.result;
+
+  const active = s.bitPos >= modexpState.bits.length ? modexpState.bits.length : s.bitPos;
+  modexpRenderBits(active);
+  document.getElementById('modexp-current-op').innerHTML =
+    `Method: <strong>${modexpState.method === 'lr' ? 'Left-to-Right' : 'Right-to-Left'}</strong><br>` +
+    `Type: ${s.type}<br>` +
+    `Bit: ${s.bitVal}<br>` +
+    `Current base value: ${s.base}<br>` +
+    `Current result: ${s.result}`;
+  document.getElementById('modexp-worked').textContent = s.worked;
+  let extra = '';
+  if (s.type === 'init') {
+    extra = `<div style="margin-top:6px;color:var(--text-muted);">Invariant start: result stores the contribution of processed bits (none yet), base is reduced modulo n.</div>`;
+  } else if (s.type === 'square') {
+    extra = modexpState.method === 'lr'
+      ? `<div style="margin-top:6px;color:var(--text-muted);">L→R rule: square first to shift processed prefix by one bit (multiply exponent value by 2).</div>`
+      : `<div style="margin-top:6px;color:var(--text-muted);">R→L rule: square base to move from a^(2^k) to a^(2^(k+1)) under modulo.</div>`;
+  } else if (s.type === 'multiply') {
+    extra = `<div style="margin-top:6px;color:var(--text-muted);">Bit is 1, so this power contributes to the exponent decomposition. Multiply it into result modulo n.</div>`;
+  } else if (s.type === 'done') {
+    extra = `<div style="margin-top:6px;color:var(--text-muted);">All bits processed. Result is the unique residue class representative in [0, n-1].</div>`;
+  }
+  document.getElementById('modexp-step-explanation').innerHTML = s.desc + extra;
+
+  document.querySelectorAll('#modexp-pseudocode li').forEach(li => li.classList.remove('active'));
+  (s.lines || []).forEach(ln => {
+    const li = document.querySelector(`#modexp-pseudocode li[data-line="${ln}"]`);
+    if (li) li.classList.add('active');
+  });
+
+  document.querySelectorAll('#modexp-history-body tr').forEach((tr, i) => {
+    tr.classList.toggle('history-active', i === idx);
+  });
+
+  if (s.type === 'done') {
+    modexpSetStatus('done');
+    modexpState.done = true;
+    const ref = Number(modPowBigInt(modexpState.base, modexpState.exponent, modexpState.modulus));
+    const ok = ref === s.result;
+    document.getElementById('modexp-final-check').innerHTML =
+      `${modexpState.base}<sup>${modexpState.exponent}</sup> mod ${modexpState.modulus} = <strong style="color:var(--green)">${s.result}</strong><br>` +
+      `Independent check (BigInt): ${ref} ${ok ? '✅ match' : '⚠ mismatch'}<br>` +
+      `Total operations: ${s.squares} squarings, ${s.mults} multiplications.`;
+  }
+}
+
+function modexpStepForward() {
+  const next = modexpState.currentStep + 1;
+  if (next >= modexpState.steps.length) {
+    modexpPause();
+    modexpSetStatus('done');
+    return;
+  }
+  modexpRenderStep(next);
+}
+
+function modexpJumpTo(idx) {
+  modexpPause();
+  modexpRenderStep(idx);
+  if (!modexpState.done) modexpSetStatus('paused');
+}
+
+function modexpPlay() {
+  if (modexpState.done || modexpState.currentStep >= modexpState.steps.length - 1) return;
+  modexpState.playing = true;
+  modexpSetStatus('playing');
+  document.getElementById('modexp-btn-pause').disabled = false;
+  document.getElementById('modexp-btn-play').disabled = true;
+
+  function tick() {
+    if (!modexpState.playing) return;
+    if (modexpState.currentStep >= modexpState.steps.length - 1) {
+      modexpPause();
+      modexpSetStatus('done');
+      return;
+    }
+    modexpStepForward();
+    modexpState.playTimer = setTimeout(tick, SPEED_MAP[modexpState.speed]);
+  }
+
+  modexpState.playTimer = setTimeout(tick, SPEED_MAP[modexpState.speed]);
+}
+
+function modexpPause() {
+  modexpState.playing = false;
+  if (modexpState.playTimer) {
+    clearTimeout(modexpState.playTimer);
+    modexpState.playTimer = null;
+  }
+  if (modexpState.status === 'playing') modexpSetStatus('paused');
+  document.getElementById('modexp-btn-play').disabled = modexpState.done || modexpState.steps.length === 0;
+  document.getElementById('modexp-btn-pause').disabled = true;
+}
+
+function modexpReset() {
+  modexpPause();
+  modexpState.steps = [];
+  modexpState.currentStep = -1;
+  modexpState.done = false;
+  modexpState.bits = [];
+  document.getElementById('modexp-step-cur').textContent = '0';
+  document.getElementById('modexp-step-total').textContent = '0';
+  document.getElementById('modexp-cnt-square').textContent = '0';
+  document.getElementById('modexp-cnt-mul').textContent = '0';
+  document.getElementById('modexp-cnt-bit').textContent = '-';
+  document.getElementById('modexp-cnt-res').textContent = '-';
+  document.getElementById('modexp-history-body').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:12px;">Build steps to see history.</td></tr>';
+  document.getElementById('modexp-current-op').textContent = 'Build steps to see square-and-multiply operations.';
+  document.getElementById('modexp-worked').textContent = 'No step yet.';
+  document.getElementById('modexp-step-explanation').innerHTML = '<div class="exp-title">Ready</div>Build steps to start.';
+  document.getElementById('modexp-final-check').textContent = 'Final result and verification will appear here.';
+  modexpRenderBits(-1);
+  document.querySelectorAll('#modexp-pseudocode li').forEach(li => li.classList.remove('active'));
+  modexpSetStatus('idle');
+  modexpSetControlsReady(false);
+  modexpUpdateComplexity();
+}
+
+function modexpOnSpeedChange(val) {
+  modexpState.speed = parseInt(val, 10);
+  document.getElementById('modexp-speed-display').textContent = SPEED_LABELS[modexpState.speed];
+  if (modexpState.playing) {
+    modexpPause();
+    modexpPlay();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// NOTES TOGGLE
+// ══════════════════════════════════════════════════════════════
+function toggleNotes() {
+  const body = currentMode === 'fw'
+    ? document.getElementById('notes-body')
+    : currentMode === 'fft'
+      ? document.getElementById('fft-notes-body')
+      : document.getElementById('modexp-notes-body');
+  const btn = currentMode === 'fw'
+    ? document.getElementById('notes-toggle-btn')
+    : currentMode === 'fft'
+      ? document.getElementById('fft-notes-toggle-btn')
+      : document.getElementById('modexp-notes-toggle-btn');
+  const open = body.classList.toggle('open');
+  body.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? 'Collapse ▲' : 'Expand ▼';
+}
+
+// ══════════════════════════════════════════════════════════════
+// COMPLEXITY COMPARISON
+// ══════════════════════════════════════════════════════════════
+function showComplexityComparison() {
+  const n = state.n;
+  // Count edges
+  let E = 0;
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++)
+      if (i !== j && state.W[i][j] < INF/2) E++;
+
+  const fwOps = Math.round(n * n * n);
+  const dijkOps = Math.round(n * (n + E) * Math.log2(n + 1));
+
+  document.getElementById('fw-complexity').textContent = `O(V³) = O(${n}³)`;
+  document.getElementById('fw-ops').textContent = `≈ ${fwOps} ops`;
+  document.getElementById('dijk-complexity').textContent = `O(V(V+E)logV)`;
+  document.getElementById('dijk-ops').textContent = `≈ ${dijkOps} ops`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+function init() {
+  loadPreset('clrs5');
+  fftGenerateSignal();
+  fftUpdateComplexity();
+  modexpLoadPreset('small');
+  switchMode('fw');
+}
+
+init();
+</script>
+</body>
+</html>
