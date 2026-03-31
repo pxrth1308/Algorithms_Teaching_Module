@@ -1026,6 +1026,11 @@ Weights: -4 + 6 + (-5) = -3  ✓</div>
         <div class="highlight-box">
           <p><strong>Encrypt/Decrypt:</strong> Encryption c = m^e mod n. Decryption m = c^d mod n. Correctness follows from Euler's theorem: for gcd(m, n) = 1, m^{phi(n)} = 1 (mod n), so m^{ed} = m (mod n).</p>
         </div>
+        <div class="key-concept">
+          <div class="kc-title">Number theory foundations</div>
+          <p><strong>Primality testing:</strong> RSA requires prime p and q. Small demos can use trial division; real keys use probabilistic tests like Miller-Rabin. Correctness depends on p and q being prime.</p>
+          <p><strong>CRT speedup:</strong> Decrypt by computing m_p = c^(d mod (p-1)) mod p and m_q = c^(d mod (q-1)) mod q, then recombine with the Chinese Remainder Theorem. This reduces decryption work by about 4x.</p>
+        </div>
       </div>
 
       <div class="notes-section" id="modexp-sec6">
