@@ -58,6 +58,8 @@ This project presents three algorithm modules in one unified interface with lect
 - Left-to-right and right-to-left square-and-multiply variants
 - Binary exponent bit-strip progression view
 - Worked modular arithmetic trace per step
+- RSA key generation, encryption, and decryption module
+- RSA testing vectors and security/factorization demo
 - Operation counters for squaring and multiplication
 - RSA-style preset for demonstration
 - Independent BigInt verification for result validation
