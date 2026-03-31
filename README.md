@@ -35,6 +35,8 @@ This project presents three algorithm modules in one unified interface with lect
 - Distance matrix and predecessor matrix visualization
 - Dynamic recurrence display for each transition
 - Graph view with highlighted intermediate and active vertices
+- Applied problem formulation and correctness invariant notes
+- Guided prompts with prediction-and-reveal checkpoints
 - Negative cycle detection and warning display
 - Path reconstruction query between selected vertices
 - Complexity comparison panel
