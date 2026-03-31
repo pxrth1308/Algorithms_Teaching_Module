@@ -2703,16 +2703,12 @@ function jumpToStep(idx) {
   setStatus('paused');
   renderStep(idx);
 }
-
-  fftUpdatePolynomialView(s);
 function setBtns(ready) {
   document.getElementById('btn-step').disabled = !ready;
   document.getElementById('btn-play').disabled = !ready;
   document.getElementById('btn-reset').disabled = !ready;
   document.getElementById('btn-pause').disabled = true;
 }
-    extra = `<div style="margin-top:6px;color:var(--text-muted);">Largest magnitude bin: k=${topK}, |X[k]|=${mags[topK].toFixed(4)}. Check symmetry for real-valued inputs.</div>` +
-      `<div style="margin-top:6px;color:var(--text-muted);">Polynomial view: X[k] = P(omega_N^k) where P(z) = sum x[n] z^n.</div>`;
 function setStatus(s) {
   state.status = s;
   const badge = document.getElementById('status-badge');
@@ -3389,6 +3385,8 @@ function fftRenderStep(idx) {
 
   drawLineChart('fft-time-chart', fftState.signal.map(z => z.re), '#38bdf8', 'x[n]');
   drawBarChart('fft-freq-chart', magnitudes(s.array));
+
+  fftUpdatePolynomialView(s);
 
   if (s.type === 'butterfly') {
     document.getElementById('fft-butterfly-info').innerHTML =
