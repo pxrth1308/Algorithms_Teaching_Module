@@ -47,6 +47,9 @@ This project presents three algorithm modules in one unified interface with lect
 - Bit-reversal initialization and iterative butterfly stages
 - Time-domain line chart and frequency-domain bar chart
 - Twiddle factor and butterfly worked-step explanation
+- Explicit problem statement and FFT complexity derivation notes
+- When-to-use guidance for FFT vs naive DFT
+- Polynomial evaluation view (roots of unity)
 - Stage-wise operation counters (butterflies, multiplications, additions)
 - IFFT reconstruction quality check (max and average error)
 
