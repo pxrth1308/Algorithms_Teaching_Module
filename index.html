@@ -957,6 +957,7 @@ Weights: -4 + 6 + (-5) = -3  ✓</div>
         <a href="#modexp-sec5">5. RSA Example</a>
         <a href="#modexp-sec6">6. Complexity</a>
         <a href="#modexp-sec7">7. Common Pitfalls</a>
+        <a href="#modexp-sec8">8. RSA Pipeline & Security</a>
       </div>
 
       <div class="notes-section" id="modexp-sec1">
@@ -1018,6 +1019,13 @@ Weights: -4 + 6 + (-5) = -3  ✓</div>
         <div class="highlight-box">
           <p><strong>Try preset:</strong> base=65, exponent=17, modulus=3233 (common teaching RSA parameters).</p>
         </div>
+        <div class="key-concept">
+          <div class="kc-title">RSA key generation</div>
+          <p>Pick primes p and q. Compute n = p*q and phi(n) = (p-1)(q-1). Choose public exponent e with gcd(e, phi) = 1. Compute d = e^{-1} mod phi. Public key = (e, n), private key = (d, n).</p>
+        </div>
+        <div class="highlight-box">
+          <p><strong>Encrypt/Decrypt:</strong> Encryption c = m^e mod n. Decryption m = c^d mod n. Correctness follows from Euler's theorem: for gcd(m, n) = 1, m^{phi(n)} = 1 (mod n), so m^{ed} = m (mod n).</p>
+        </div>
       </div>
 
       <div class="notes-section" id="modexp-sec6">
@@ -1040,6 +1048,20 @@ Weights: -4 + 6 + (-5) = -3  ✓</div>
         </div>
         <div class="highlight-box">
           <p><strong>Pitfall 3:</strong> Using modulus n ≤ 1. Modular arithmetic requires n > 1 for meaningful residue classes.</p>
+        </div>
+      </div>
+
+      <div class="notes-section" id="modexp-sec8">
+        <h3>8 — RSA Pipeline & Security Notes</h3>
+        <div class="key-concept">
+          <div class="kc-title">Full pipeline</div>
+          <p>Keygen: choose p, q, compute n and phi, choose e, compute d. Encrypt with public key (e, n), decrypt with private key (d, n). The tool below shows each step and verifies that m -> c -> m' returns the original message.</p>
+        </div>
+        <div class="highlight-box">
+          <p><strong>Testing:</strong> Verify multiple messages and check gcd(m, n) = 1. If gcd(m, n) ≠ 1, Euler's theorem does not apply directly and correctness can fail.</p>
+        </div>
+        <div class="highlight-box">
+          <p><strong>Security assumption:</strong> RSA relies on the difficulty of factoring n = p*q for large primes. Demo keys are intentionally small and can be broken by trial division, which this tool can demonstrate.</p>
         </div>
       </div>
     </div>
@@ -1632,6 +1654,56 @@ w = exp(-2*pi*i*j/m)</div>
       </div>
 
       <div class="ctrl-section">
+        <div class="ctrl-section-title">RSA Key Generation</div>
+        <div class="fft-signal-form">
+          <div>
+            <label class="fft-mini">Prime p</label>
+            <input class="fft-input" id="rsa-p" type="number" value="61" step="1">
+          </div>
+          <div>
+            <label class="fft-mini">Prime q</label>
+            <input class="fft-input" id="rsa-q" type="number" value="53" step="1">
+          </div>
+          <div class="full">
+            <label class="fft-mini">Public exponent e</label>
+            <input class="fft-input" id="rsa-e" type="number" value="17" step="1">
+          </div>
+        </div>
+        <div class="playback-btns" style="margin-top:8px;">
+          <button class="pb-btn" onclick="rsaLoadDemo()">Demo Keys</button>
+          <button class="pb-btn primary" onclick="rsaGenerateKeys()">Generate Keys</button>
+        </div>
+        <div class="fft-mini" id="rsa-key-status" style="margin-top:6px;">Enter primes p and q, then generate keys.</div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">RSA Encrypt / Decrypt</div>
+        <div class="fft-signal-form">
+          <div class="full">
+            <label class="fft-mini">Message m (0 <= m &lt; n)</label>
+            <input class="fft-input" id="rsa-message" type="number" value="65" step="1">
+          </div>
+          <div class="full">
+            <label class="fft-mini">Ciphertext c</label>
+            <input class="fft-input" id="rsa-cipher" type="number" value="" step="1">
+          </div>
+        </div>
+        <div class="playback-btns" style="margin-top:8px;">
+          <button class="pb-btn" onclick="rsaEncrypt()">Encrypt</button>
+          <button class="pb-btn" onclick="rsaDecrypt()">Decrypt</button>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">RSA Testing & Security</div>
+        <div class="playback-btns">
+          <button class="pb-btn" onclick="rsaRunTests()">Run Test Vectors</button>
+          <button class="pb-btn" onclick="rsaAttemptFactor()">Attempt Factorization</button>
+        </div>
+        <div class="fft-mini" id="rsa-test-status" style="margin-top:6px;">Tests use the current RSA keys.</div>
+      </div>
+
+      <div class="ctrl-section">
         <div class="ctrl-section-title">Playback</div>
         <div class="playback-btns">
           <button class="pb-btn primary" id="modexp-btn-build" onclick="modexpBuildSteps()">Build Steps</button>
@@ -1734,6 +1806,21 @@ w = exp(-2*pi*i*j/m)</div>
       <div class="graph-panel">
         <div class="panel-title">Final Check</div>
         <div class="modexp-flow" id="modexp-final-check">Final result and verification will appear here.</div>
+      </div>
+
+      <div class="graph-panel">
+        <div class="panel-title">RSA Key Math</div>
+        <div class="modexp-flow" id="rsa-key-math">Generate RSA keys to see n, phi(n), e, and d.</div>
+      </div>
+
+      <div class="graph-panel">
+        <div class="panel-title">RSA Encrypt/Decrypt Check</div>
+        <div class="modexp-flow" id="rsa-crypto-check">Encrypt a message to see ciphertext and verify decryption.</div>
+      </div>
+
+      <div class="graph-panel">
+        <div class="panel-title">RSA Security & Tests</div>
+        <div class="modexp-flow" id="rsa-security-check">Run tests or factorization to explore RSA security assumptions.</div>
       </div>
     </section>
   </div>
@@ -1846,6 +1933,19 @@ let modexpState = {
   status: 'idle',
   done: false,
   bits: []
+};
+
+let rsaState = {
+  p: 61n,
+  q: 53n,
+  n: 0n,
+  phi: 0n,
+  e: 17n,
+  d: 0n,
+  valid: false,
+  last: { m: null, c: null, m2: null, gcd: null },
+  testReport: '',
+  factorReport: ''
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -3473,6 +3573,323 @@ function modPowBigInt(base, exp, modn) {
   return r;
 }
 
+function rsaParseBigInt(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  const raw = el.value.trim();
+  if (!raw) return null;
+  try {
+    return BigInt(raw);
+  } catch {
+    return null;
+  }
+}
+
+function rsaGcd(a, b) {
+  let x = a;
+  let y = b;
+  while (y !== 0n) {
+    const t = x % y;
+    x = y;
+    y = t;
+  }
+  return x;
+}
+
+function rsaEgcd(a, b) {
+  let oldR = a;
+  let r = b;
+  let oldS = 1n;
+  let s = 0n;
+  let oldT = 0n;
+  let t = 1n;
+
+  while (r !== 0n) {
+    const q = oldR / r;
+    [oldR, r] = [r, oldR - q * r];
+    [oldS, s] = [s, oldS - q * s];
+    [oldT, t] = [t, oldT - q * t];
+  }
+  return { g: oldR, x: oldS, y: oldT };
+}
+
+function rsaModInv(a, m) {
+  const res = rsaEgcd(a, m);
+  if (res.g !== 1n) return null;
+  return ((res.x % m) + m) % m;
+}
+
+function rsaIsPrimeSmall(n) {
+  if (n < 2n) return false;
+  if (n > 1000000n) return null;
+  if (n % 2n === 0n) return n === 2n;
+  for (let i = 3n; i * i <= n; i += 2n) {
+    if (n % i === 0n) return false;
+  }
+  return true;
+}
+
+function rsaChooseE(phi) {
+  const candidates = [3n, 5n, 17n, 257n, 65537n];
+  for (const e of candidates) {
+    if (e > 1n && e < phi && rsaGcd(e, phi) === 1n) return e;
+  }
+  for (let e = 3n; e < phi && e < 2000n; e += 2n) {
+    if (rsaGcd(e, phi) === 1n) return e;
+  }
+  return null;
+}
+
+function rsaSetStatus(message, kind) {
+  const el = document.getElementById('rsa-key-status');
+  if (!el) return;
+  el.textContent = message;
+  if (kind === 'error') el.style.color = 'var(--red)';
+  else if (kind === 'ok') el.style.color = 'var(--green)';
+  else if (kind === 'warn') el.style.color = 'var(--amber)';
+  else el.style.color = 'var(--text-muted)';
+}
+
+function rsaUpdateKeyPanels() {
+  const el = document.getElementById('rsa-key-math');
+  if (!el) return;
+  if (!rsaState.valid) {
+    el.textContent = 'Generate RSA keys to see n, phi(n), e, and d.';
+    return;
+  }
+  const gcd = rsaGcd(rsaState.e, rsaState.phi);
+  const edMod = (rsaState.e * rsaState.d) % rsaState.phi;
+  el.innerHTML =
+    `p = ${rsaState.p}, q = ${rsaState.q}<br>` +
+    `n = p*q = ${rsaState.n}<br>` +
+    `phi(n) = (p-1)(q-1) = ${rsaState.phi}<br>` +
+    `e = ${rsaState.e}, d = ${rsaState.d}<br>` +
+    `public key = (e, n), private key = (d, n)<br>` +
+    `gcd(e, phi) = ${gcd}, e*d mod phi = ${edMod}`;
+}
+
+function rsaUpdateCryptoPanels() {
+  const el = document.getElementById('rsa-crypto-check');
+  if (!el) return;
+  if (!rsaState.valid) {
+    el.textContent = 'Encrypt a message after generating RSA keys.';
+    return;
+  }
+  const last = rsaState.last || {};
+  if (last.m === null && last.c === null) {
+    el.textContent = 'Enter a message m and press Encrypt or Decrypt to verify the pipeline.';
+    return;
+  }
+  const gcd = last.gcd !== null ? last.gcd : '-';
+  const m = last.m !== null ? last.m : '-';
+  const c = last.c !== null ? last.c : '-';
+  const m2 = last.m2 !== null ? last.m2 : '-';
+  const ok = (last.m !== null && last.m2 !== null && last.m === last.m2);
+  const okText = ok ? 'PASS' : 'CHECK';
+  const gcdNote = (last.gcd !== null && last.gcd !== 1n)
+    ? 'Warning: gcd(m, n) != 1; Euler theorem does not apply directly.'
+    : 'Euler theorem applies when gcd(m, n) = 1.';
+  el.innerHTML =
+    `m = ${m}<br>` +
+    `c = m^e mod n = ${c}<br>` +
+    `m' = c^d mod n = ${m2}<br>` +
+    `gcd(m, n) = ${gcd} &nbsp;|&nbsp; verify: ${okText}<br>` +
+    `<span style="color:var(--text-muted);">${gcdNote}</span>`;
+}
+
+function rsaUpdateSecurityPanels() {
+  const el = document.getElementById('rsa-security-check');
+  if (!el) return;
+  const base = 'Security assumption: factoring n = p*q is hard for large primes.';
+  const tests = rsaState.testReport ? `<br><br>${rsaState.testReport}` : '<br><br>Tests: not run.';
+  const factors = rsaState.factorReport ? `<br><br>${rsaState.factorReport}` : '<br><br>Factorization: not attempted.';
+  el.innerHTML = base + tests + factors;
+}
+
+function rsaLoadDemo() {
+  const pEl = document.getElementById('rsa-p');
+  const qEl = document.getElementById('rsa-q');
+  const eEl = document.getElementById('rsa-e');
+  const mEl = document.getElementById('rsa-message');
+  if (pEl) pEl.value = '61';
+  if (qEl) qEl.value = '53';
+  if (eEl) eEl.value = '17';
+  if (mEl) mEl.value = '65';
+  rsaGenerateKeys();
+}
+
+function rsaGenerateKeys() {
+  const p = rsaParseBigInt('rsa-p');
+  const q = rsaParseBigInt('rsa-q');
+  if (p === null || q === null) {
+    rsaState.valid = false;
+    rsaSetStatus('Enter integer primes p and q.', 'error');
+    rsaUpdateKeyPanels();
+    return;
+  }
+  if (p <= 1n || q <= 1n) {
+    rsaState.valid = false;
+    rsaSetStatus('p and q must be > 1.', 'error');
+    rsaUpdateKeyPanels();
+    return;
+  }
+  if (p === q) {
+    rsaState.valid = false;
+    rsaSetStatus('p and q must be distinct primes.', 'error');
+    rsaUpdateKeyPanels();
+    return;
+  }
+
+  const pCheck = rsaIsPrimeSmall(p);
+  const qCheck = rsaIsPrimeSmall(q);
+  if (pCheck === false || qCheck === false) {
+    rsaState.valid = false;
+    rsaSetStatus('p or q is not prime (small-prime check).', 'error');
+    rsaUpdateKeyPanels();
+    return;
+  }
+
+  const n = p * q;
+  const phi = (p - 1n) * (q - 1n);
+  let e = rsaParseBigInt('rsa-e');
+  const primeWarn = (pCheck === null || qCheck === null);
+  let statusKind = primeWarn ? 'warn' : 'ok';
+  const primeNote = primeWarn ? 'Prime check skipped for large values.' : '';
+  let autoE = false;
+  if (e === null || e <= 1n || e >= phi || rsaGcd(e, phi) !== 1n) {
+    const chosen = rsaChooseE(phi);
+    if (!chosen) {
+      rsaState.valid = false;
+      rsaSetStatus('Could not find valid e; choose different primes.', 'error');
+      rsaUpdateKeyPanels();
+      return;
+    }
+    e = chosen;
+    const eEl = document.getElementById('rsa-e');
+    if (eEl) eEl.value = e.toString();
+    statusKind = 'warn';
+    autoE = true;
+  }
+
+  const d = rsaModInv(e, phi);
+  if (d === null) {
+    rsaState.valid = false;
+    rsaSetStatus('Failed to compute d (mod inverse).', 'error');
+    rsaUpdateKeyPanels();
+    return;
+  }
+
+  rsaState = {
+    p,
+    q,
+    n,
+    phi,
+    e,
+    d,
+    valid: true,
+    last: { m: null, c: null, m2: null, gcd: null },
+    testReport: '',
+    factorReport: ''
+  };
+
+  let msg = `Keys ready: n = ${n}.`;
+  if (autoE) msg += ` Auto-chose e = ${e}.`;
+  if (primeNote) msg += ` ${primeNote}`;
+  rsaSetStatus(msg, statusKind);
+  const testEl = document.getElementById('rsa-test-status');
+  if (testEl) testEl.textContent = 'Keys ready. Run tests or encrypt a message.';
+  rsaUpdateKeyPanels();
+  rsaUpdateCryptoPanels();
+  rsaUpdateSecurityPanels();
+}
+
+function rsaEncrypt() {
+  if (!rsaState.valid) {
+    rsaSetStatus('Generate RSA keys first.', 'error');
+    return;
+  }
+  const m = rsaParseBigInt('rsa-message');
+  if (m === null) {
+    rsaSetStatus('Enter integer message m.', 'error');
+    return;
+  }
+  if (m < 0n || m >= rsaState.n) {
+    rsaSetStatus('Message must satisfy 0 <= m < n.', 'error');
+    return;
+  }
+  const c = modPowBigInt(m, rsaState.e, rsaState.n);
+  const cipherEl = document.getElementById('rsa-cipher');
+  if (cipherEl) cipherEl.value = c.toString();
+  rsaState.last = { m, c, m2: null, gcd: rsaGcd(m, rsaState.n) };
+  rsaUpdateCryptoPanels();
+}
+
+function rsaDecrypt() {
+  if (!rsaState.valid) {
+    rsaSetStatus('Generate RSA keys first.', 'error');
+    return;
+  }
+  const c = rsaParseBigInt('rsa-cipher');
+  if (c === null) {
+    rsaSetStatus('Enter integer ciphertext c.', 'error');
+    return;
+  }
+  const m2 = modPowBigInt(c, rsaState.d, rsaState.n);
+  const mInput = rsaParseBigInt('rsa-message');
+  const m = mInput !== null ? mInput : null;
+  const gcd = m !== null ? rsaGcd(m, rsaState.n) : null;
+  rsaState.last = { m, c, m2, gcd };
+  rsaUpdateCryptoPanels();
+}
+
+function rsaRunTests() {
+  if (!rsaState.valid) {
+    rsaSetStatus('Generate RSA keys first.', 'error');
+    return;
+  }
+  const candidates = [2n, 7n, 42n, rsaState.n - 1n];
+  const msgs = candidates.filter(m => m >= 0n && m < rsaState.n);
+  let report = '<strong>Test vectors:</strong><br>';
+  msgs.forEach((m) => {
+    const c = modPowBigInt(m, rsaState.e, rsaState.n);
+    const m2 = modPowBigInt(c, rsaState.d, rsaState.n);
+    const ok = m2 === m ? 'OK' : 'FAIL';
+    report += `m=${m} -> c=${c} -> m'=${m2} (${ok})<br>`;
+  });
+  rsaState.testReport = report;
+  const testEl = document.getElementById('rsa-test-status');
+  if (testEl) testEl.textContent = `Last run: ${msgs.length} test vectors.`;
+  rsaUpdateSecurityPanels();
+}
+
+function rsaAttemptFactor() {
+  if (!rsaState.valid) {
+    rsaSetStatus('Generate RSA keys first.', 'error');
+    return;
+  }
+  const n = rsaState.n;
+  const maxTry = 1000000n;
+  if (n > 100000000000n) {
+    rsaState.factorReport = 'Factorization demo skipped: n too large for trial division.';
+    rsaUpdateSecurityPanels();
+    return;
+  }
+  let factor = null;
+  for (let i = 2n; i * i <= n && i <= maxTry; i += 1n) {
+    if (n % i === 0n) {
+      factor = i;
+      break;
+    }
+  }
+  if (factor) {
+    const other = n / factor;
+    rsaState.factorReport = `Trial division found factors: ${factor} × ${other} = ${n}. Small keys are insecure.`;
+  } else {
+    rsaState.factorReport = 'No small factors found (within demo limit). Large primes are harder to factor.';
+  }
+  rsaUpdateSecurityPanels();
+}
+
 function modexpSetStatus(s) {
   modexpState.status = s;
   const badge = document.getElementById('modexp-status-badge');
@@ -3493,6 +3910,7 @@ function modexpLoadPreset(name) {
     document.getElementById('modexp-exp').value = 17;
     document.getElementById('modexp-mod').value = 3233;
     document.getElementById('modexp-method').value = 'lr';
+    rsaLoadDemo();
   } else {
     document.getElementById('modexp-base').value = 7;
     document.getElementById('modexp-exp').value = 13;
@@ -3886,6 +4304,7 @@ function init() {
   fftGenerateSignal();
   fftUpdateComplexity();
   modexpLoadPreset('small');
+  rsaLoadDemo();
   switchMode('fw');
 }
 
