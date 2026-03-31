@@ -524,6 +524,37 @@ table.pred-matrix td.pred-path { background: rgba(167,139,250,0.12); color: var(
 #step-explanation .exp-no-change { color: var(--text-muted); }
 #step-explanation .exp-warning { color: var(--red); }
 
+.guided-panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px; flex: 1; min-width: 240px;
+}
+.guided-toggle {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text-muted); margin-bottom: 8px;
+}
+.guided-card {
+  background: var(--panel3); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; margin-top: 6px;
+}
+.guided-title {
+  font-size: 11px; font-weight: 700; color: var(--accent);
+  letter-spacing: 0.4px; margin-bottom: 6px;
+}
+.guided-question {
+  font-size: 12px; color: var(--text-dim); line-height: 1.5;
+  margin-bottom: 8px;
+}
+.guided-answer {
+  font-size: 12px; color: var(--green); line-height: 1.5;
+  margin-top: 8px;
+}
+.guided-empty {
+  font-size: 12px; color: var(--text-muted);
+}
+.guided-btn {
+  padding: 6px 10px; font-size: 11px;
+}
+
 /* History table */
 .history-panel {
   background: var(--panel); border: 1px solid var(--border);
@@ -775,6 +806,9 @@ table.history-table tr.history-active td { background: rgba(56,189,248,0.08); co
         <div class="kc-title">What we want</div>
         <p>A V×V matrix D where D[i][j] = the weight of a shortest path from vertex i to vertex j, for all i and j. Plus a predecessor matrix Π that lets us reconstruct the actual path.</p>
       </div>
+      <div class="highlight-box">
+        <p><strong>Applied scenario (logistics routing):</strong> A company manages routes between warehouses (vertices) and shipping lanes (directed edges). Each lane has a cost; rebates can make some edges negative. <strong>Input:</strong> a weighted directed graph and the vertex set. <strong>Output:</strong> D and Pi so every pair (i,j) has its minimum total cost and a reconstructable path. <strong>Constraints:</strong> no negative cycles (otherwise costs are unbounded below). <strong>Objective:</strong> precompute all-pairs shortest paths so any routing query is answered instantly.</p>
+      </div>
       <p>Real-world applications: routing protocols (OSPF, BGP), GPS navigation with multiple destinations, network reliability analysis, arbitrage detection in currency exchange.</p>
       <div class="highlight-box">
         <p><strong>Try it yourself:</strong> Click "CLRS Example" in the controls, then click Build Steps and Step through the algorithm. Watch how the distance matrix evolves as each vertex k is used as an intermediate.</p>
@@ -788,6 +822,9 @@ table.history-table tr.history-active td { background: rgba(56,189,248,0.08); co
       <div class="key-concept">
         <div class="kc-title">Floyd-Warshall's advantage</div>
         <p>Floyd-Warshall handles negative weights, works on dense graphs in O(V³), and has a simple, elegant implementation. For dense graphs, it beats running Dijkstra V times.</p>
+      </div>
+      <div class="highlight-box">
+        <p><strong>When not to use Floyd-Warshall:</strong> If you only need shortest paths from one source, use Dijkstra (non-negative weights) or Bellman-Ford (negative weights). If the graph is sparse and you need all pairs, Johnson's is usually faster. Use Floyd-Warshall when you need all pairs and the graph is dense or has negative edges.</p>
       </div>
     </div>
 
@@ -814,6 +851,10 @@ table.history-table tr.history-active td { background: rgba(56,189,248,0.08); co
         <p>Either we don't use k as intermediate (first term), or we go through k (second term). We take the minimum.</p>
       </div>
       <p>The final answer is <code>d(V)[i][j]</code> — the shortest path using any vertex as intermediate. In practice, Floyd-Warshall updates the matrix in-place (it's provably equivalent).</p>
+      <div class="key-concept">
+        <div class="kc-title">Correctness invariant</div>
+        <p>After finishing the outer loop for k, D[i][j] equals the shortest path from i to j that uses only intermediate vertices in {1..k}. Base case k=0: D is just W (direct edges). Inductive step: when we consider vertex k, we either keep the best path without k or improve via k, so the invariant holds for k+1. If no path exists, D[i][j] stays INF (infinity) and Pi[i][j] stays NIL.</p>
+      </div>
     </div>
 
     <div class="notes-section" id="sec5">
@@ -889,6 +930,14 @@ After Floyd-Warshall (final result):
 Example: Shortest path 1→3 = -3
 Path: 1 → 5 → 4 → 3
 Weights: -4 + 6 + (-5) = -3  ✓</div>
+      <div class="highlight-box">
+        <p><strong>Post-run checklist:</strong></p>
+        <ul style="color:var(--text-dim); margin: 6px 0 0 20px; line-height: 1.8;">
+          <li>Pick one pair (i,j) and verify the path cost by summing its edges.</li>
+          <li>Check the diagonal D[i][i]; any negative value means a negative cycle.</li>
+          <li>Find one update that changed D[i][j] and explain which intermediate k caused it.</li>
+        </ul>
+      </div>
     </div>
   </div>
 </section>
@@ -1278,6 +1327,17 @@ w = exp(-2*pi*i*j/m)</div>
         <div id="step-explanation">
           <div class="exp-title">Ready</div>
           Click <strong>Build Steps</strong>, then use <strong>Step</strong> or <strong>Play</strong> to see line-by-line explanations of what Floyd-Warshall is doing and why.
+        </div>
+      </div>
+
+      <div class="guided-panel">
+        <div class="panel-title">Guided Prompts</div>
+        <label class="guided-toggle">
+          <input type="checkbox" id="guided-toggle" checked onchange="onGuidedToggle()">
+          Enable prompts
+        </label>
+        <div id="guided-prompts">
+          <div class="guided-empty">Prompts appear during stepping.</div>
         </div>
       </div>
     </div>
@@ -1726,7 +1786,14 @@ let state = {
   status: 'idle',  // idle | ready | playing | paused | done | error
   pathHighlight: null, // {from, to, path: []}
   done: false,
-  hasNegCycle: false
+  hasNegCycle: false,
+  guided: {
+    enabled: true,
+    seenUpdate: false,
+    seenCheck: false,
+    seenNeg: false,
+    lastPrompt: null
+  }
 };
 
 let currentMode = 'fw';
@@ -1772,6 +1839,112 @@ function parseInput(str) {
   if (s === 'inf' || s === '∞' || s === '') return INF;
   const n = parseFloat(s);
   return isNaN(n) ? INF : n;
+}
+
+function renderGuidedEmpty(message) {
+  const el = document.getElementById('guided-prompts');
+  if (!el) return;
+  const text = message || 'Prompts appear during stepping.';
+  el.innerHTML = `<div class="guided-empty">${text}</div>`;
+}
+
+function renderGuidedPrompt(prompt) {
+  const el = document.getElementById('guided-prompts');
+  if (!el) return;
+  state.guided.lastPrompt = prompt;
+  el.innerHTML =
+    `<div class="guided-card">` +
+      `<div class="guided-title">${prompt.title}</div>` +
+      `<div class="guided-question">${prompt.question}</div>` +
+      `<button class="pb-btn guided-btn" onclick="toggleGuidedAnswer('${prompt.answerId}')">Reveal answer</button>` +
+      `<div class="guided-answer" id="${prompt.answerId}" style="display:none;">${prompt.answer}</div>` +
+    `</div>`;
+}
+
+function toggleGuidedAnswer(answerId) {
+  const el = document.getElementById(answerId);
+  if (!el) return;
+  el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+}
+
+function onGuidedToggle() {
+  if (!state.guided) return;
+  const toggle = document.getElementById('guided-toggle');
+  if (!toggle) return;
+  state.guided.enabled = toggle.checked;
+  if (!state.guided.enabled) {
+    renderGuidedEmpty('Prompts disabled.');
+    return;
+  }
+  if (state.guided.lastPrompt) {
+    renderGuidedPrompt(state.guided.lastPrompt);
+  } else {
+    renderGuidedEmpty('Prompts appear during stepping.');
+  }
+}
+
+function resetGuidedPrompts() {
+  const toggle = document.getElementById('guided-toggle');
+  const enabled = toggle ? toggle.checked : true;
+  state.guided = {
+    enabled,
+    seenUpdate: false,
+    seenCheck: false,
+    seenNeg: false,
+    lastPrompt: null
+  };
+  renderGuidedEmpty(enabled ? 'Prompts appear during stepping.' : 'Prompts disabled.');
+}
+
+function updateGuidedPrompts(s, stepIdx) {
+  if (!state.guided || !state.guided.enabled) return;
+  if (!document.getElementById('guided-prompts')) return;
+  if (currentMode !== 'fw') return;
+
+  if (s.type === 'ij_update' && !state.guided.seenUpdate) {
+    const curVal = fmt(s.oldVal);
+    const viaVal = fmt(s.via);
+    const dik = fmt(s.dik);
+    const dkj = fmt(s.dkj);
+    const answerId = `guided-answer-update-${stepIdx}`;
+    state.guided.seenUpdate = true;
+    renderGuidedPrompt({
+      title: 'Prediction: update or not?',
+      question: `For k=${s.k+1}, i=${s.i+1}, j=${s.j+1}, should D[i][j] update? Compare ${dik} + ${dkj} with current ${curVal}.`,
+      answer: `Because ${dik} + ${dkj} = ${viaVal} is less than ${curVal}, update D[${s.i+1}][${s.j+1}] to ${viaVal} and set Pi[${s.i+1}][${s.j+1}] = Pi[${s.k+1}][${s.j+1}].`,
+      answerId
+    });
+    return;
+  }
+
+  if (s.type === 'ij_check' && !state.guided.seenCheck) {
+    const curVal = fmt(s.cur);
+    const viaVal = fmt(s.via);
+    const dik = fmt(s.dik);
+    const dkj = fmt(s.dkj);
+    const answerId = `guided-answer-check-${stepIdx}`;
+    state.guided.seenCheck = true;
+    renderGuidedPrompt({
+      title: 'Prediction: no-change case',
+      question: `For k=${s.k+1}, i=${s.i+1}, j=${s.j+1}, will D[i][j] stay the same? Compare ${dik} + ${dkj} with current ${curVal}.`,
+      answer: `Because ${dik} + ${dkj} = ${viaVal} is not less than ${curVal}, keep D[${s.i+1}][${s.j+1}] = ${curVal}.`,
+      answerId
+    });
+    return;
+  }
+
+  if ((s.type === 'neg_cycle' || s.type === 'done') && !state.guided.seenNeg) {
+    const hasNeg = s.negCycles && s.negCycles.length > 0;
+    const list = hasNeg ? s.negCycles.map(v => v + 1).join(', ') : 'none';
+    const answerId = `guided-answer-neg-${stepIdx}`;
+    state.guided.seenNeg = true;
+    renderGuidedPrompt({
+      title: 'Check: negative cycles',
+      question: 'How do we decide if a negative cycle exists after the algorithm finishes?',
+      answer: `Check the diagonal entries D[i][i]. If any are negative, there is a negative cycle. In this run: ${list}.`,
+      answerId
+    });
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2153,6 +2326,9 @@ function renderStep(stepIdx) {
   // Step explanation
   document.getElementById('step-explanation').innerHTML = s.desc;
 
+  // Guided prompts
+  updateGuidedPrompts(s, stepIdx);
+
   // History highlight
   document.querySelectorAll('#history-body tr').forEach((tr, idx) => {
     tr.classList.toggle('history-active', idx === stepIdx);
@@ -2313,6 +2489,7 @@ function buildStepsUI() {
   state.done = false;
   state.hasNegCycle = false;
   state.pathHighlight = null;
+  resetGuidedPrompts();
   document.getElementById('neg-cycle-alert').style.display = 'none';
   document.getElementById('path-result').className = 'path-result';
   document.getElementById('path-result').textContent = 'Run the algorithm, then query a path.';
@@ -2382,6 +2559,7 @@ function resetAnim() {
   state.done = false;
   state.pathHighlight = null;
   state.hasNegCycle = false;
+  resetGuidedPrompts();
   document.getElementById('neg-cycle-alert').style.display = 'none';
   document.getElementById('cnt-comparisons').textContent = '0';
   document.getElementById('cnt-updates').textContent = '0';
@@ -2445,6 +2623,7 @@ function loadPreset(name) {
   state.currentStep = -1;
   state.done = false;
   state.pathHighlight = null;
+  resetGuidedPrompts();
 
   document.getElementById('vertex-count').value = preset.n;
   buildMatrixInputGrid(preset.n, state.W);
@@ -2503,6 +2682,7 @@ function applyCustomInput() {
   state.currentStep = -1;
   state.done = false;
   state.pathHighlight = null;
+  resetGuidedPrompts();
 
   buildPathSelects(state.n);
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
