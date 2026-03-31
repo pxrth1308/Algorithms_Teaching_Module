@@ -1,6 +1,6 @@
 # Teaching Algorithm Visualizer
 
-Professional interactive teaching tool for BSD 404 (Algorithms II), built as a single-page web application in HTML, CSS, JavaScript, and SVG.
+Interactive teaching tool for BSD 404 (Algorithms II). Single-page web app built with HTML, CSS, JavaScript, and SVG.
 
 ## Overview
 
@@ -8,37 +8,33 @@ This project presents three algorithm modules in one unified interface with lect
 
 1. Part 1: Floyd-Warshall (All-Pairs Shortest Paths)
 2. Part 2: Fast Fourier Transform (FFT/DFT)
-3. Part 3: Modular Exponentiation (Square-and-Multiply)
+3. Part 3: Modular Exponentiation (Square-and-Multiply) + RSA
 
 ## Academic Context
 
-- Course: BSD 404 — Algorithms II
+- Course: BSD 404 - Algorithms II
 - Instructor: Dr. Arash Kermani
 - Student: Aggarwal, Parth
 - Student ID: 20220001200
 
-## Key Features
+## Features
 
 ### Shared Platform Features
 
 - Tab-based navigation across three parts
 - Expandable lecture notes for each module
-- Step, Play, Pause, Reset controls
-- Adjustable playback speed
-- Status badge and step counters
-- History table with jump-to-step interaction
+- Step/Play/Pause/Reset controls with adjustable playback speed
+- Status badges, step counters, and jump-to-step history
 - Responsive layout for desktop and mobile
 
 ### Part 1: Floyd-Warshall
 
 - Preset graphs and custom matrix input
-- Distance matrix and predecessor matrix visualization
-- Dynamic recurrence display for each transition
-- Graph view with highlighted intermediate and active vertices
-- Applied problem formulation and correctness invariant notes
+- Distance and predecessor matrix visualization
+- Dynamic recurrence display and correctness invariant notes
 - Guided prompts with prediction-and-reveal checkpoints
 - Negative cycle detection and warning display
-- Path reconstruction query between selected vertices
+- Path reconstruction queries
 - Complexity comparison panel
 
 ### Part 2: FFT / DFT
@@ -47,56 +43,57 @@ This project presents three algorithm modules in one unified interface with lect
 - Bit-reversal initialization and iterative butterfly stages
 - Time-domain line chart and frequency-domain bar chart
 - Twiddle factor and butterfly worked-step explanation
-- Explicit problem statement and FFT complexity derivation notes
+- Explicit problem statement, polynomial view, and O(N log N) derivation
 - When-to-use guidance for FFT vs naive DFT
-- Polynomial evaluation view (roots of unity)
-- Stage-wise operation counters (butterflies, multiplications, additions)
-- IFFT reconstruction quality check (max and average error)
+- Stage-wise operation counters and IFFT reconstruction check
 
-### Part 3: Modular Exponentiation
+### Part 3: Modular Exponentiation + RSA
 
 - Left-to-right and right-to-left square-and-multiply variants
-- Binary exponent bit-strip progression view
-- Worked modular arithmetic trace per step
+- Binary exponent bit-strip progression and worked trace
 - RSA key generation, encryption, and decryption module
-- RSA testing vectors and security/factorization demo
+- Number theory notes: Euler's theorem, primality testing, CRT speedup
+- RSA test vectors and factorization demo
 - Operation counters for squaring and multiplication
-- RSA-style preset for demonstration
-- Independent BigInt verification for result validation
+- RSA preset for demonstration and BigInt verification
 
 ## Technical Design
 
 - Single-file application architecture in index.html
 - Vanilla JavaScript state machines per module
 - Precomputed step arrays for deterministic playback
-- SVG-based graph rendering for Part 1
-- Canvas-free chart rendering using SVG for Part 2
-- Shared visual language and theme across all parts
+- SVG-based graph rendering and charting
 
 ## Project Structure
 
 - index.html: Complete implementation (UI, styles, logic)
 - project.md: Assignment requirements and project reference
-- README.md: Professional project documentation
+- README.md: Project documentation
 
-## How to Run
+## Requirements
+
+- Modern browser with JavaScript and SVG support
+- BigInt support (for RSA) is required
+- No build step or external dependencies
+
+## Quick Start
 
 1. Open index.html in any modern browser.
 2. Use the top tabs to switch between Part 1, Part 2, and Part 3.
 3. Expand lecture notes for conceptual context.
-4. Use Build Steps and playback controls to explore algorithm execution.
+4. Click Build Steps and use playback controls to explore execution.
 
 ## Recommended Demo Flow
 
-1. Start with Part 1 using CLRS preset.
+1. Start with Part 1 using the CLRS preset.
 2. Build steps and show recurrence updates, then path reconstruction.
 3. Switch to Part 2 and generate a signal with visible dominant bins.
 4. Build FFT steps and explain one butterfly update.
-5. Switch to Part 3 and run modular exponentiation with RSA preset.
+5. Switch to Part 3 and run modular exponentiation with the RSA preset.
 6. Show final verification and operation-count intuition.
 
-## Quality Notes
+## Notes
 
-- The interface emphasizes pedagogy: each visual step is paired with explanatory text.
-- Algorithm traces are reproducible and reviewable through history navigation.
-- The project is suitable for classroom demo, lab walkthrough, and report submission.
+- RSA uses small demo keys and is not secure for real cryptography.
+- FFT input size must be a power of two; the UI enforces this.
+- Negative cycles make shortest paths undefined and are highlighted.
