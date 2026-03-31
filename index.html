@@ -1068,6 +1068,9 @@ Weights: -4 + 6 + (-5) = -3  ✓</div>
         <div class="kc-title">Interpretation</div>
         <p>Time domain answers: "What is the signal value now?" Frequency domain answers: "Which oscillations are present, and how strong are they?"</p>
       </div>
+      <div class="highlight-box">
+        <p><strong>Problem statement:</strong> Input: sampled signal x[0..N-1] (real or complex). Output: frequency coefficients X[0..N-1] and magnitudes |X[k]|. Objective: reveal dominant frequencies and enable efficient filtering or analysis. Constraints: for this tool, N is a power of 2 (radix-2 FFT), up to 128 for interactive playback.</p>
+      </div>
     </div>
 
     <div class="notes-section" id="fft-sec2">
@@ -1077,6 +1080,10 @@ Weights: -4 + 6 + (-5) = -3  ✓</div>
         <div class="kc-title">Forward Transform</div>
         <p style="font-family:'Consolas',monospace; font-size:13px; color:var(--teal); margin:8px 0;">X[k] = sum(n=0..N-1) x[n] * e^(-2*pi*i*k*n/N)</p>
         <p>Each X[k] is a correlation with a complex sinusoid. Large |X[k]| means that frequency is strongly present.</p>
+      </div>
+      <div class="key-concept">
+        <div class="kc-title">Polynomial view</div>
+        <p>Define P(z) = sum(n=0..N-1) x[n] z^n. Then X[k] = P(omega_N^k), where omega_N = e^(-2*pi*i/N). The inverse DFT performs interpolation to recover x[n].</p>
       </div>
       <div class="highlight-box">
         <p><strong>Naive DFT cost:</strong> N outputs × N terms each = O(N²). For large N this quickly becomes expensive.</p>
@@ -1123,7 +1130,15 @@ w = exp(-2*pi*i*j/m)</div>
         <tr><td>Naive DFT</td><td>O(N²)</td><td>Direct sum for each k</td><td>Small N, reference checks</td></tr>
         <tr><td>FFT (Cooley-Tukey)</td><td style="color:var(--green)">O(N log N)</td><td>Reuse via butterflies</td><td>Real-time and large-N transforms</td></tr>
       </table>
+      <div class="key-concept">
+        <div class="kc-title">Why O(N log N)</div>
+        <p>There are log2(N) stages, and each stage processes N/2 butterflies. Each butterfly does O(1) work (1 complex multiply + 2 add/sub), so total work is O(N log N).</p>
+        <p style="margin-top:6px;">Recurrence view: T(N) = 2T(N/2) + O(N) from splitting into even/odd parts and combining with twiddles, which solves to O(N log N).</p>
+      </div>
       <p>Worked intuition: for N = 16 and x[n] = sin(2*pi*2*n/16), the strongest magnitude bins should appear near k = 2 and its symmetric partner k = 14.</p>
+      <div class="highlight-box">
+        <p><strong>When FFT is worth it:</strong> Use FFT for large N or repeated transforms. For very small N or when you only need a few bins, a direct DFT can be simpler.</p>
+      </div>
       <div class="highlight-box">
         <p><strong>Suggested demo flow:</strong> Generate sine (N=16, freq=2), Build Steps, Play. Then switch to square and chirp to compare broader spectra.</p>
       </div>
@@ -1476,6 +1491,7 @@ w = exp(-2*pi*i*j/m)</div>
             <p id="fft-fft-ops">-</p>
           </div>
         </div>
+        <p class="fft-mini" id="fft-speedup-note" style="margin-top:6px;">For N=16, naive DFT ~ 256 terms vs FFT ~ 64 butterfly scale.</p>
       </div>
     </aside>
 
@@ -1537,6 +1553,11 @@ w = exp(-2*pi*i*j/m)</div>
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div class="graph-panel">
+          <div class="panel-title">Polynomial Evaluation View</div>
+          <div class="fft-butterfly" id="fft-poly-view">Build steps to see X[k] as evaluations of P(z) at roots of unity.</div>
         </div>
 
         <div class="graph-panel">
@@ -2583,13 +2604,15 @@ function jumpToStep(idx) {
   renderStep(idx);
 }
 
+  fftUpdatePolynomialView(s);
 function setBtns(ready) {
   document.getElementById('btn-step').disabled = !ready;
   document.getElementById('btn-play').disabled = !ready;
   document.getElementById('btn-reset').disabled = !ready;
   document.getElementById('btn-pause').disabled = true;
 }
-
+    extra = `<div style="margin-top:6px;color:var(--text-muted);">Largest magnitude bin: k=${topK}, |X[k]|=${mags[topK].toFixed(4)}. Check symmetry for real-valued inputs.</div>` +
+      `<div style="margin-top:6px;color:var(--text-muted);">Polynomial view: X[k] = P(omega_N^k) where P(z) = sum x[n] z^n.</div>`;
 function setStatus(s) {
   state.status = s;
   const badge = document.getElementById('status-badge');
@@ -3144,6 +3167,32 @@ function fftUpdateComplexity() {
   const fftOps = Math.round(n * Math.log2(n));
   document.getElementById('fft-dft-ops').textContent = `~ ${dftOps} core terms`;
   document.getElementById('fft-fft-ops').textContent = `~ ${fftOps} butterfly scale`;
+  const note = document.getElementById('fft-speedup-note');
+  if (note) note.textContent = `For N=${n}, naive DFT ~ ${dftOps} terms vs FFT ~ ${fftOps} butterfly scale.`;
+}
+
+function fftUpdatePolynomialView(step) {
+  const el = document.getElementById('fft-poly-view');
+  if (!el || !step) return;
+  const n = fftState.n;
+  const coeffCount = Math.min(6, fftState.signal.length);
+  const coeffs = fftState.signal
+    .slice(0, coeffCount)
+    .map((z, i) => `x[${i}] = ${z.re.toFixed(3)}`)
+    .join(', ');
+  const showK = Math.min(4, step.array.length);
+  const evals = [];
+  for (let k = 0; k < showK; k++) {
+    evals.push(`X[${k}] = ${cFmt(step.array[k])}`);
+  }
+  const stageNote = step.type === 'done'
+    ? 'Final evaluations at roots of unity.'
+    : 'Intermediate values (final X[k] after completion).';
+  el.innerHTML =
+    `<div style="margin-bottom:6px;color:var(--text-muted);">P(z) = sum x[n] z^n, omega_N = exp(-2*pi*i/${n})</div>` +
+    `<div style="margin-bottom:6px;color:var(--text-dim);">${coeffs}${fftState.signal.length > coeffCount ? ', ...' : ''}</div>` +
+    `<div style="margin-bottom:6px;color:var(--text-dim);">${evals.join('<br>')}</div>` +
+    `<div style="color:var(--text-muted); font-size:11px;">${stageNote}</div>`;
 }
 
 function fftGenerateSignal() {
